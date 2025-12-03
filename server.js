@@ -337,22 +337,22 @@ app.post('/api/download-excel', authenticateToken, (req, res) => {
     });
 
     // Try to parse JSON responses from Claude
-    const parsedData = [];
     results.forEach((result, index) => {
       if (result.success && result.response) {
         try {
           // Try to extract JSON from the response
           const jsonMatch = result.response.match(/```json\s*([\s\S]*?)\s*```/);
-          if (jsonMatch) {
+          if (!jsonMatch) {
+            // Try without code blocks
+            const parsed = JSON.parse(result.response);
+            processStructuredData(workbook, parsed, index);
+          } else {
             const parsed = JSON.parse(jsonMatch[1]);
-            if (Array.isArray(parsed)) {
-              parsed.forEach(item => parsedData.push({ 'Source Row': index + 1, ...item }));
-            } else {
-              parsedData.push({ 'Source Row': index + 1, ...parsed });
-            }
+            processStructuredData(workbook, parsed, index);
           }
         } catch (e) {
           // If parsing fails, skip
+          console.log('Failed to parse JSON for row', index, e.message);
         }
       }
     });
@@ -361,10 +361,60 @@ app.post('/api/download-excel', authenticateToken, (req, res) => {
     const mainSheet = xlsx.utils.json_to_sheet(excelData);
     xlsx.utils.book_append_sheet(workbook, mainSheet, 'Results');
 
-    // If we found structured data, create a separate sheet
-    if (parsedData.length > 0) {
-      const dataSheet = xlsx.utils.json_to_sheet(parsedData);
-      xlsx.utils.book_append_sheet(workbook, dataSheet, 'Parsed Data');
+    // Helper function to process structured data
+    function processStructuredData(workbook, data, sourceRow) {
+      // Check if this is the PA competenze format
+      if (data.tabella_1_normativa_generale) {
+        // Process each table as a separate sheet
+        const tables = {
+          'Normativa Generale': data.tabella_1_normativa_generale,
+          'Normativa Naz-Reg': data.tabella_2_normativa_nazionale_regionale,
+          'Normativa Specifica': data.tabella_3_normativa_specifica_profilo,
+          'Competenze Tecnico-Spec': data.tabella_4_competenze_tecnico_specialistiche,
+          'Competenze Gestionali': data.tabella_5_competenze_gestionali_procedurali,
+          'Competenze Trasversali': data.tabella_6_competenze_trasversali,
+          'Competenze Informatiche': data.tabella_7_competenze_informatiche,
+          'Competenze Linguistiche': data.tabella_8_competenze_linguistiche
+        };
+
+        for (const [sheetName, tableData] of Object.entries(tables)) {
+          if (tableData && Array.isArray(tableData) && tableData.length > 0) {
+            const sheet = xlsx.utils.json_to_sheet(tableData);
+            xlsx.utils.book_append_sheet(workbook, sheet, sheetName);
+          }
+        }
+
+        // Add summary sheets if present
+        if (data.sintesi_esecutiva) {
+          const sintesiData = [{
+            'Testo': data.sintesi_esecutiva.testo || '',
+            'Top 3 Competenze': (data.sintesi_esecutiva.top_3_competenze_critiche || []).join('; '),
+            'Priorità Formative': (data.sintesi_esecutiva.priorita_formative || []).join('; '),
+            'Gap Tipici': (data.sintesi_esecutiva.gap_tipici || []).join('; '),
+            'Normative Regionali': data.sintesi_esecutiva.normative_regionali || ''
+          }];
+          const sintesiSheet = xlsx.utils.json_to_sheet(sintesiData);
+          xlsx.utils.book_append_sheet(workbook, sintesiSheet, 'Sintesi Esecutiva');
+        }
+
+        if (data.raccomandazioni_operative) {
+          const raccData = [{
+            'Percorsi Formativi': (data.raccomandazioni_operative.percorsi_formativi || []).join('; '),
+            'Certificazioni Utili': (data.raccomandazioni_operative.certificazioni_utili || []).join('; '),
+            'Modalità di Verifica': (data.raccomandazioni_operative.modalita_verifica || []).join('; ')
+          }];
+          const raccSheet = xlsx.utils.json_to_sheet(raccData);
+          xlsx.utils.book_append_sheet(workbook, raccSheet, 'Raccomandazioni');
+        }
+      } else if (Array.isArray(data)) {
+        // Generic array data
+        const sheet = xlsx.utils.json_to_sheet(data);
+        xlsx.utils.book_append_sheet(workbook, sheet, `Data Row ${sourceRow + 1}`);
+      } else if (typeof data === 'object') {
+        // Generic object - convert to single row
+        const sheet = xlsx.utils.json_to_sheet([data]);
+        xlsx.utils.book_append_sheet(workbook, sheet, `Data Row ${sourceRow + 1}`);
+      }
     }
 
     // Generate Excel file buffer
