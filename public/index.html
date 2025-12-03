@@ -484,7 +484,7 @@
                         </div>
                     </div>
                     <button class="download-btn" onclick="downloadResults()">Download Results as JSON</button>
-                    <button class="download-btn" onclick="downloadExcel()" style="background: #2196f3; margin-left: 10px;">Download as Excel</button>
+                    <button class="download-btn" onclick="downloadExcelZip()" style="background: #2196f3; margin-left: 10px;">📦 Download All as ZIP</button>
                 </div>
 
                 <div id="resultsItems"></div>
@@ -652,8 +652,13 @@
                 resultDiv.innerHTML = `
                     <div class="result-header">
                         <div class="result-index">Row ${result.rowIndex + 1}</div>
-                        <div class="result-status ${result.success ? 'success' : 'error'}">
-                            ${result.success ? 'Success' : 'Error'}
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button class="download-btn" onclick="downloadSingleExcel(${result.rowIndex})" style="padding: 6px 12px; font-size: 13px; background: #2196f3;">
+                                📥 Download Excel
+                            </button>
+                            <div class="result-status ${result.success ? 'success' : 'error'}">
+                                ${result.success ? 'Success' : 'Error'}
+                            </div>
                         </div>
                     </div>
 
@@ -700,14 +705,47 @@
             URL.revokeObjectURL(url);
         }
 
-        async function downloadExcel() {
+        async function downloadExcelZip() {
             if (!batchResults) return;
 
             try {
-                const response = await fetch('/api/download-excel', {
+                const response = await fetch('/api/download-excel-zip', {
                     method: 'POST',
                     headers: getAuthHeaders(),
                     body: JSON.stringify({ results: batchResults })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate ZIP file');
+                }
+
+                // Get the blob from response
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+
+                // Create download link
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `analisi_competenze_${Date.now()}.zip`;
+                link.click();
+
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Error downloading ZIP:', error);
+                alert('Failed to download ZIP file: ' + error.message);
+            }
+        }
+
+        async function downloadSingleExcel(rowIndex) {
+            if (!batchResults || !batchResults[rowIndex]) return;
+
+            const result = batchResults[rowIndex];
+
+            try {
+                const response = await fetch('/api/download-single-excel', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ result, rowIndex })
                 });
 
                 if (!response.ok) {
@@ -718,10 +756,20 @@
                 const blob = await response.blob();
                 const url = URL.createObjectURL(blob);
 
+                // Extract filename from response headers or generate default
+                const contentDisposition = response.headers.get('content-disposition');
+                let filename = `analisi_row${rowIndex + 1}.xlsx`;
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename=(.+)/);
+                    if (filenameMatch) {
+                        filename = filenameMatch[1].replace(/['"]/g, '');
+                    }
+                }
+
                 // Create download link
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `claude_results_${Date.now()}.xlsx`;
+                link.download = filename;
                 link.click();
 
                 URL.revokeObjectURL(url);

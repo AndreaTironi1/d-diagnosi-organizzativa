@@ -6,6 +6,7 @@ import { dirname, join } from 'path';
 import multer from 'multer';
 import xlsx from 'xlsx';
 import jwt from 'jsonwebtoken';
+import JSZip from 'jszip';
 
 dotenv.config();
 
@@ -304,6 +305,156 @@ app.post('/api/execute-batch', authenticateToken, async (req, res) => {
     res.status(500).json({
       error: error.message || 'Failed to process batch request'
     });
+  }
+});
+
+// Helper function to create a single Excel file from a result
+function createExcelFromResult(result, rowIndex) {
+  const workbook = xlsx.utils.book_new();
+
+  // Try to parse JSON from Claude response
+  let parsedData = null;
+  if (result.success && result.response) {
+    try {
+      const jsonMatch = result.response.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        parsedData = JSON.parse(jsonMatch[1]);
+      } else {
+        parsedData = JSON.parse(result.response);
+      }
+    } catch (e) {
+      console.log('Failed to parse JSON for row', rowIndex, e.message);
+    }
+  }
+
+  // If we have PA competenze format, create sheets
+  if (parsedData && parsedData.tabella_1_normativa_generale) {
+    const tables = {
+      'Normativa Generale': parsedData.tabella_1_normativa_generale,
+      'Normativa Naz-Reg': parsedData.tabella_2_normativa_nazionale_regionale,
+      'Normativa Specifica': parsedData.tabella_3_normativa_specifica_profilo,
+      'Competenze Tecnico-Spec': parsedData.tabella_4_competenze_tecnico_specialistiche,
+      'Competenze Gestionali': parsedData.tabella_5_competenze_gestionali_procedurali,
+      'Competenze Trasversali': parsedData.tabella_6_competenze_trasversali,
+      'Competenze Informatiche': parsedData.tabella_7_competenze_informatiche,
+      'Competenze Linguistiche': parsedData.tabella_8_competenze_linguistiche
+    };
+
+    for (const [sheetName, tableData] of Object.entries(tables)) {
+      if (tableData && Array.isArray(tableData) && tableData.length > 0) {
+        const sheet = xlsx.utils.json_to_sheet(tableData);
+        xlsx.utils.book_append_sheet(workbook, sheet, sheetName);
+      }
+    }
+
+    // Add summary sheets
+    if (parsedData.sintesi_esecutiva) {
+      const sintesiData = [{
+        'Testo': parsedData.sintesi_esecutiva.testo || '',
+        'Top 3 Competenze': (parsedData.sintesi_esecutiva.top_3_competenze_critiche || []).join('; '),
+        'Priorità Formative': (parsedData.sintesi_esecutiva.priorita_formative || []).join('; '),
+        'Gap Tipici': (parsedData.sintesi_esecutiva.gap_tipici || []).join('; '),
+        'Normative Regionali': parsedData.sintesi_esecutiva.normative_regionali || ''
+      }];
+      const sintesiSheet = xlsx.utils.json_to_sheet(sintesiData);
+      xlsx.utils.book_append_sheet(workbook, sintesiSheet, 'Sintesi Esecutiva');
+    }
+
+    if (parsedData.raccomandazioni_operative) {
+      const raccData = [{
+        'Percorsi Formativi': (parsedData.raccomandazioni_operative.percorsi_formativi || []).join('; '),
+        'Certificazioni Utili': (parsedData.raccomandazioni_operative.certificazioni_utili || []).join('; '),
+        'Modalità di Verifica': (parsedData.raccomandazioni_operative.modalita_verifica || []).join('; ')
+      }];
+      const raccSheet = xlsx.utils.json_to_sheet(raccData);
+      xlsx.utils.book_append_sheet(workbook, raccSheet, 'Raccomandazioni');
+    }
+  } else {
+    // Fallback: create a single sheet with the response
+    const fallbackData = [{
+      'Row #': rowIndex + 1,
+      ...result.rowData,
+      'Claude Response': result.response || result.error || 'N/A',
+      'Status': result.success ? 'Success' : 'Error'
+    }];
+    if (result.usage) {
+      fallbackData[0]['Input Tokens'] = result.usage.inputTokens;
+      fallbackData[0]['Output Tokens'] = result.usage.outputTokens;
+    }
+    const sheet = xlsx.utils.json_to_sheet(fallbackData);
+    xlsx.utils.book_append_sheet(workbook, sheet, 'Result');
+  }
+
+  return workbook;
+}
+
+// Helper function to generate filename from row data
+function generateFilename(result, rowIndex) {
+  const rowData = result.rowData || {};
+  const profilo = rowData.PROFILO || rowData.Profilo || rowData.profilo || '';
+  const settore = rowData.SETTORE || rowData.Settore || rowData.settore || '';
+
+  let filename = 'Analisi';
+  if (profilo) filename += `_${profilo.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  if (settore) filename += `_${settore.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  filename += `_row${rowIndex + 1}`;
+
+  return filename + '.xlsx';
+}
+
+// API endpoint to download single row as Excel
+app.post('/api/download-single-excel', authenticateToken, (req, res) => {
+  try {
+    const { result, rowIndex } = req.body;
+
+    if (!result) {
+      return res.status(400).json({ error: 'Result data is required' });
+    }
+
+    const workbook = createExcelFromResult(result, rowIndex || 0);
+    const excelBuffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    const filename = generateFilename(result, rowIndex || 0);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    res.send(excelBuffer);
+
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Failed to generate Excel file' });
+  }
+});
+
+// API endpoint to download all results as ZIP
+app.post('/api/download-excel-zip', authenticateToken, async (req, res) => {
+  try {
+    const { results } = req.body;
+
+    if (!results || !Array.isArray(results)) {
+      return res.status(400).json({ error: 'Results data is required' });
+    }
+
+    const zip = new JSZip();
+
+    // Create an Excel file for each result
+    results.forEach((result, index) => {
+      const workbook = createExcelFromResult(result, index);
+      const excelBuffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+      const filename = generateFilename(result, index);
+      zip.file(filename, excelBuffer);
+    });
+
+    // Generate ZIP file
+    const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename=analisi_competenze_${Date.now()}.zip`);
+    res.send(zipBuffer);
+
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Failed to generate ZIP file' });
   }
 });
 
