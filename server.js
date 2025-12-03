@@ -49,6 +49,16 @@ function authenticateToken(req, res, next) {
 
 app.use(express.static('public'));
 
+// Serve index.html for root path
+app.get('/', (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'index.html'));
+});
+
+// Serve login.html
+app.get('/login.html', (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'login.html'));
+});
+
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
