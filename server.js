@@ -295,9 +295,15 @@ app.post('/api/execute-batch', authenticateToken, async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.warn('⚠️  Warning: ANTHROPIC_API_KEY not set in .env file');
-  }
-});
+// Only listen on port in local development
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.warn('⚠️  Warning: ANTHROPIC_API_KEY not set in .env file');
+    }
+  });
+}
+
+// Export for Vercel
+export default app;
