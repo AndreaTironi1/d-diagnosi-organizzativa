@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Executor - Claude API with Excel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .file-upload-container {
+            border: 2px dashed #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .file-upload-container:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .file-upload-container.has-file {
+            border-color: #4caf50;
+            background: #f1f8f4;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .excel-info {
+            display: none;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .excel-info.active {
+            display: block;
+        }
+
+        .column-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .column-tag {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+        }
+
+        button {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results-container {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .results-container.active {
+            display: block;
+        }
+
+        .results-summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .results-summary h3 {
+            margin-bottom: 10px;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+
+        .result-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .result-item.error {
+            border-color: #f44336;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .result-index {
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .result-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .result-status.success {
+            background: #e8f5e9;
+            color: #4caf50;
+        }
+
+        .result-status.error {
+            background: #ffebee;
+            color: #f44336;
+        }
+
+        .result-section {
+            margin-bottom: 15px;
+        }
+
+        .result-section-title {
+            font-weight: 600;
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .result-content {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .result-row-data {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .row-data-item {
+            background: #e3f2fd;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+
+        .row-data-key {
+            font-weight: 600;
+            color: #1976d2;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .download-btn {
+            background: #4caf50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        .download-btn:hover {
+            background: #45a049;
+        }
+
+        .divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #e0e0e0, transparent);
+            margin: 30px 0;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .header {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="logout-btn" onclick="handleLogout()">Logout</button>
+            <h1>Prompt Executor with Excel</h1>
+            <p>Upload Excel file and execute prompts for each row using Claude API</p>
+        </div>
+
+        <div class="content">
+            <!-- Step 1: Upload Excel -->
+            <div class="section">
+                <div class="section-title">
+                    <div class="step-number">1</div>
+                    <span>Upload Excel File</span>
+                </div>
+                <div class="file-upload-container" id="fileUploadContainer" onclick="document.getElementById('excelFile').click()">
+                    <div class="upload-icon">📊</div>
+                    <p><strong>Click to upload Excel file</strong></p>
+                    <p class="hint">Supports .xlsx and .xls files</p>
+                    <input type="file" id="excelFile" accept=".xlsx,.xls" onchange="handleFileUpload(event)">
+                </div>
+                <div class="excel-info" id="excelInfo">
+                    <p><strong>File loaded:</strong> <span id="fileName"></span></p>
+                    <p><strong>Rows:</strong> <span id="rowCount"></span></p>
+                    <p><strong>Columns:</strong></p>
+                    <div class="column-list" id="columnList"></div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Step 2: Enter Prompt -->
+            <div class="section">
+                <div class="section-title">
+                    <div class="step-number">2</div>
+                    <span>Enter Prompt Template</span>
+                </div>
+                <label for="prompt">Prompt Template</label>
+                <textarea id="prompt" rows="8" placeholder="Enter your prompt here. Use [column_name] to reference Excel columns.&#10;&#10;Example: Write a summary about [Product_Name] which costs [Price] and is in the [Category] category."></textarea>
+                <div class="hint">Use square brackets [column_name] to reference columns from your Excel file</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Step 3: Execute -->
+            <div class="section">
+                <div class="section-title">
+                    <div class="step-number">3</div>
+                    <span>Execute Batch Processing</span>
+                </div>
+                <button class="btn-primary" id="executeBtn" onclick="executeBatch()" disabled>
+                    Execute for All Rows
+                </button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p id="loadingText">Processing with Claude API...</p>
+            </div>
+
+            <!-- Results -->
+            <div class="results-container" id="resultsContainer">
+                <div class="results-summary">
+                    <h3>Batch Processing Results</h3>
+                    <div class="summary-stats">
+                        <div class="stat-box">
+                            <div class="stat-label">Total Rows</div>
+                            <div class="stat-value" id="totalRows">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Successful</div>
+                            <div class="stat-value" id="successCount">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Errors</div>
+                            <div class="stat-value" id="errorCount">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Input Tokens</div>
+                            <div class="stat-value" id="inputTokens">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Output Tokens</div>
+                            <div class="stat-value" id="outputTokens">0</div>
+                        </div>
+                    </div>
+                    <button class="download-btn" onclick="downloadResults()">Download Results as JSON</button>
+                </div>
+
+                <div id="resultsItems"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let excelData = null;
+        let excelColumns = [];
+        let batchResults = null;
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/upload-excel', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to upload file');
+                }
+
+                excelData = data.data;
+                excelColumns = data.columns;
+
+                // Update UI
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('rowCount').textContent = data.rowCount;
+
+                const columnList = document.getElementById('columnList');
+                columnList.innerHTML = '';
+                data.columns.forEach(col => {
+                    const tag = document.createElement('div');
+                    tag.className = 'column-tag';
+                    tag.textContent = `[${col}]`;
+                    columnList.appendChild(tag);
+                });
+
+                document.getElementById('fileUploadContainer').classList.add('has-file');
+                document.getElementById('excelInfo').classList.add('active');
+                document.getElementById('executeBtn').disabled = false;
+
+                alert(`Excel file loaded successfully!\n${data.rowCount} rows found.`);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to upload Excel file: ' + error.message);
+            }
+        }
+
+        async function executeBatch() {
+            const prompt = document.getElementById('prompt').value.trim();
+
+            if (!prompt) {
+                alert('Please enter a prompt template');
+                return;
+            }
+
+            if (!excelData) {
+                alert('Please upload an Excel file first');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('resultsContainer').classList.remove('active');
+            document.getElementById('executeBtn').disabled = true;
+
+            try {
+                const response = await fetch('/api/execute-batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, excelData })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Request failed');
+                }
+
+                batchResults = data.results;
+
+                // Display results
+                displayResults(data);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to execute batch: ' + error.message);
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById('executeBtn').disabled = false;
+            }
+        }
+
+        function displayResults(data) {
+            // Update summary
+            document.getElementById('totalRows').textContent = data.results.length;
+            document.getElementById('successCount').textContent = data.successCount;
+            document.getElementById('errorCount').textContent = data.errorCount;
+            document.getElementById('inputTokens').textContent = data.totalUsage.inputTokens.toLocaleString();
+            document.getElementById('outputTokens').textContent = data.totalUsage.outputTokens.toLocaleString();
+
+            // Display individual results
+            const resultsItems = document.getElementById('resultsItems');
+            resultsItems.innerHTML = '';
+
+            data.results.forEach(result => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'result-item' + (result.success ? '' : ' error');
+
+                const rowDataHTML = Object.entries(result.rowData)
+                    .map(([key, value]) => `
+                        <div class="row-data-item">
+                            <span class="row-data-key">[${key}]:</span> ${value}
+                        </div>
+                    `).join('');
+
+                resultDiv.innerHTML = `
+                    <div class="result-header">
+                        <div class="result-index">Row ${result.rowIndex + 1}</div>
+                        <div class="result-status ${result.success ? 'success' : 'error'}">
+                            ${result.success ? 'Success' : 'Error'}
+                        </div>
+                    </div>
+
+                    <div class="result-section">
+                        <div class="result-section-title">Row Data</div>
+                        <div class="result-row-data">${rowDataHTML}</div>
+                    </div>
+
+                    <div class="result-section">
+                        <div class="result-section-title">Processed Prompt</div>
+                        <div class="result-content">${result.processedPrompt}</div>
+                    </div>
+
+                    <div class="result-section">
+                        <div class="result-section-title">${result.success ? 'Claude Response' : 'Error Message'}</div>
+                        <div class="result-content">${result.success ? result.response : result.error}</div>
+                    </div>
+
+                    ${result.success ? `
+                        <div class="hint">
+                            Input: ${result.usage.inputTokens} tokens | Output: ${result.usage.outputTokens} tokens
+                        </div>
+                    ` : ''}
+                `;
+
+                resultsItems.appendChild(resultDiv);
+            });
+
+            document.getElementById('resultsContainer').classList.add('active');
+        }
+
+        function downloadResults() {
+            if (!batchResults) return;
+
+            const dataStr = JSON.stringify(batchResults, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `claude_results_${Date.now()}.json`;
+            link.click();
+
+            URL.revokeObjectURL(url);
+        }
+
+        async function handleLogout() {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    window.location.href = '/login.html';
+                } else {
+                    alert('Failed to logout');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('Failed to logout');
+            }
+        }
+    </script>
+</body>
+</html>
