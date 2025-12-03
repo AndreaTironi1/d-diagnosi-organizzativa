@@ -433,6 +433,10 @@
                 <label for="prompt">Prompt Template</label>
                 <textarea id="prompt" rows="8" placeholder="Enter your prompt here. Use [column_name] to reference Excel columns.&#10;&#10;Example: Write a summary about [Product_Name] which costs [Price] and is in the [Category] category."></textarea>
                 <div class="hint">Use square brackets [column_name] to reference columns from your Excel file</div>
+                <div class="hint" style="margin-top: 10px; background: #e3f2fd; padding: 10px; border-radius: 6px;">
+                    <strong>💡 Tip for structured output:</strong> To get data as Excel tables, ask Claude to return data in JSON format within code blocks. Example:<br>
+                    <code style="font-size: 11px;">Please analyze [Data] and return results as JSON: ```json [{"field1": "value", "field2": "value"}] ```</code>
+                </div>
             </div>
 
             <div class="divider"></div>
@@ -480,6 +484,7 @@
                         </div>
                     </div>
                     <button class="download-btn" onclick="downloadResults()">Download Results as JSON</button>
+                    <button class="download-btn" onclick="downloadExcel()" style="background: #2196f3; margin-left: 10px;">Download as Excel</button>
                 </div>
 
                 <div id="resultsItems"></div>
@@ -693,6 +698,37 @@
             link.click();
 
             URL.revokeObjectURL(url);
+        }
+
+        async function downloadExcel() {
+            if (!batchResults) return;
+
+            try {
+                const response = await fetch('/api/download-excel', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ results: batchResults })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate Excel file');
+                }
+
+                // Get the blob from response
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+
+                // Create download link
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `claude_results_${Date.now()}.xlsx`;
+                link.click();
+
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Error downloading Excel:', error);
+                alert('Failed to download Excel file: ' + error.message);
+            }
         }
 
         async function handleLogout() {

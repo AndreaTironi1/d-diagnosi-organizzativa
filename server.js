@@ -307,6 +307,81 @@ app.post('/api/execute-batch', authenticateToken, async (req, res) => {
   }
 });
 
+// API endpoint to download results as Excel
+app.post('/api/download-excel', authenticateToken, (req, res) => {
+  try {
+    const { results } = req.body;
+
+    if (!results || !Array.isArray(results)) {
+      return res.status(400).json({ error: 'Results data is required' });
+    }
+
+    // Create a new workbook
+    const workbook = xlsx.utils.book_new();
+
+    // Prepare data for Excel - add original data + Claude response
+    const excelData = results.map((result, index) => {
+      const row = {
+        'Row #': index + 1,
+        ...result.rowData,
+        'Claude Response': result.response || result.error || 'N/A',
+        'Status': result.success ? 'Success' : 'Error'
+      };
+
+      if (result.usage) {
+        row['Input Tokens'] = result.usage.inputTokens;
+        row['Output Tokens'] = result.usage.outputTokens;
+      }
+
+      return row;
+    });
+
+    // Try to parse JSON responses from Claude
+    const parsedData = [];
+    results.forEach((result, index) => {
+      if (result.success && result.response) {
+        try {
+          // Try to extract JSON from the response
+          const jsonMatch = result.response.match(/```json\s*([\s\S]*?)\s*```/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[1]);
+            if (Array.isArray(parsed)) {
+              parsed.forEach(item => parsedData.push({ 'Source Row': index + 1, ...item }));
+            } else {
+              parsedData.push({ 'Source Row': index + 1, ...parsed });
+            }
+          }
+        } catch (e) {
+          // If parsing fails, skip
+        }
+      }
+    });
+
+    // Create main sheet with all responses
+    const mainSheet = xlsx.utils.json_to_sheet(excelData);
+    xlsx.utils.book_append_sheet(workbook, mainSheet, 'Results');
+
+    // If we found structured data, create a separate sheet
+    if (parsedData.length > 0) {
+      const dataSheet = xlsx.utils.json_to_sheet(parsedData);
+      xlsx.utils.book_append_sheet(workbook, dataSheet, 'Parsed Data');
+    }
+
+    // Generate Excel file buffer
+    const excelBuffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    // Set headers for file download
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=claude_results_${Date.now()}.xlsx`);
+
+    res.send(excelBuffer);
+
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Failed to generate Excel file' });
+  }
+});
+
 // Only listen on port in local development
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
