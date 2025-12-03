@@ -51,12 +51,14 @@ app.use(express.static('public'));
 
 // Serve index.html for root path
 app.get('/', (req, res) => {
-  res.sendFile(join(__dirname, 'public', 'index.html'));
+  const filePath = join(process.cwd(), 'public', 'index.html');
+  res.sendFile(filePath);
 });
 
 // Serve login.html
 app.get('/login.html', (req, res) => {
-  res.sendFile(join(__dirname, 'public', 'login.html'));
+  const filePath = join(process.cwd(), 'public', 'login.html');
+  res.sendFile(filePath);
 });
 
 const anthropic = new Anthropic({
