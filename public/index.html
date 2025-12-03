@@ -492,6 +492,28 @@
         let excelColumns = [];
         let batchResults = null;
 
+        // Check if user is authenticated
+        function checkAuth() {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                window.location.href = '/login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Get authorization headers
+        function getAuthHeaders() {
+            const token = localStorage.getItem('authToken');
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        // Check authentication on page load
+        checkAuth();
+
         async function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -499,15 +521,25 @@
             const formData = new FormData();
             formData.append('file', file);
 
+            const token = localStorage.getItem('authToken');
+
             try {
                 const response = await fetch('/api/upload-excel', {
                     method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: formData
                 });
 
                 const data = await response.json();
 
                 if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        localStorage.removeItem('authToken');
+                        window.location.href = '/login.html';
+                        return;
+                    }
                     throw new Error(data.error || 'Failed to upload file');
                 }
 
@@ -560,13 +592,18 @@
             try {
                 const response = await fetch('/api/execute-batch', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({ prompt, excelData })
                 });
 
                 const data = await response.json();
 
                 if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        localStorage.removeItem('authToken');
+                        window.location.href = '/login.html';
+                        return;
+                    }
                     throw new Error(data.error || 'Request failed');
                 }
 
@@ -662,19 +699,17 @@
             try {
                 const response = await fetch('/api/logout', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
-                if (response.ok) {
-                    window.location.href = '/login.html';
-                } else {
-                    alert('Failed to logout');
-                }
+                // Remove token from localStorage
+                localStorage.removeItem('authToken');
+                window.location.href = '/login.html';
             } catch (error) {
                 console.error('Logout error:', error);
-                alert('Failed to logout');
+                // Even if API call fails, remove token and redirect
+                localStorage.removeItem('authToken');
+                window.location.href = '/login.html';
             }
         }
     </script>

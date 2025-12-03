@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import multer from 'multer';
 import xlsx from 'xlsx';
-import session from 'express-session';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -14,6 +14,9 @@ const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// JWT secret key
+const JWT_SECRET = process.env.JWT_SECRET || 'prompt-executor-jwt-secret-key-2025';
 
 // Hardcoded credentials
 const CREDENTIALS = {
@@ -24,43 +27,25 @@ const CREDENTIALS = {
 // Configure multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Session configuration
-app.use(session({
-  secret: 'prompt-executor-secret-key-2025',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-}));
-
 app.use(express.json());
 
-// Authentication middleware
-function requireAuth(req, res, next) {
-  if (req.session && req.session.authenticated) {
-    return next();
-  }
-  res.status(401).json({ error: 'Authentication required' });
-}
+// JWT Authentication middleware
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-// Serve login page for unauthenticated users
-app.use((req, res, next) => {
-  // Allow access to login page and login API
-  if (req.path === '/login.html' || req.path === '/api/login' || req.path === '/api/logout') {
-    return next();
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
   }
 
-  // If not authenticated and trying to access protected resource, redirect to login
-  if (!req.session || !req.session.authenticated) {
-    if (req.path.startsWith('/api/')) {
-      return res.status(401).json({ error: 'Authentication required' });
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
     }
-    return res.redirect('/login.html');
-  }
-
-  next();
-});
+    req.user = user;
+    next();
+  });
+}
 
 app.use(express.static('public'));
 
@@ -94,7 +79,7 @@ function extractVariableNames(template) {
 }
 
 // API endpoint to execute prompt
-app.post('/api/execute', async (req, res) => {
+app.post('/api/execute', authenticateToken, async (req, res) => {
   try {
     const { prompt, variables } = req.body;
 
@@ -146,26 +131,30 @@ app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
 
   if (username === CREDENTIALS.username && password === CREDENTIALS.password) {
-    req.session.authenticated = true;
-    req.session.username = username;
-    res.json({ success: true, message: 'Login successful' });
+    // Generate JWT token
+    const token = jwt.sign(
+      { username: username },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token: token
+    });
   } else {
     res.status(401).json({ success: false, error: 'Invalid username or password' });
   }
 });
 
-// Logout endpoint
+// Logout endpoint (client-side will remove token)
 app.post('/api/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).json({ error: 'Failed to logout' });
-    }
-    res.json({ success: true, message: 'Logged out successfully' });
-  });
+  res.json({ success: true, message: 'Logged out successfully' });
 });
 
 // API endpoint to parse variables from prompt
-app.post('/api/parse-variables', (req, res) => {
+app.post('/api/parse-variables', authenticateToken, (req, res) => {
   try {
     const { prompt } = req.body;
 
@@ -183,7 +172,7 @@ app.post('/api/parse-variables', (req, res) => {
 });
 
 // API endpoint to upload and parse Excel file
-app.post('/api/upload-excel', upload.single('file'), (req, res) => {
+app.post('/api/upload-excel', authenticateToken, upload.single('file'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -218,7 +207,7 @@ app.post('/api/upload-excel', upload.single('file'), (req, res) => {
 });
 
 // API endpoint to execute prompt for all rows in Excel
-app.post('/api/execute-batch', async (req, res) => {
+app.post('/api/execute-batch', authenticateToken, async (req, res) => {
   try {
     const { prompt, excelData } = req.body;
 
