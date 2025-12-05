@@ -112,7 +112,7 @@ app.post('/api/execute', authenticateToken, async (req, res) => {
     // Call Claude API
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 4096,
+      max_tokens: 8192,
       messages: [
         {
           role: 'user',
@@ -222,7 +222,7 @@ app.post('/api/upload-excel', authenticateToken, upload.single('file'), (req, re
 // API endpoint to execute prompt for all rows in Excel
 app.post('/api/execute-batch', authenticateToken, async (req, res) => {
   try {
-    const { prompt, excelData } = req.body;
+    const { prompt, excelData, model } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
@@ -238,6 +238,9 @@ app.post('/api/execute-batch', authenticateToken, async (req, res) => {
       });
     }
 
+    // Use provided model or default to Sonnet 4.5
+    const selectedModel = model || 'claude-sonnet-4-5-20250929';
+
     const results = [];
 
     // Process each row
@@ -250,8 +253,8 @@ app.post('/api/execute-batch', authenticateToken, async (req, res) => {
       try {
         // Call Claude API
         const message = await anthropic.messages.create({
-          model: 'claude-sonnet-4-5-20250929',
-          max_tokens: 4096,
+          model: selectedModel,
+          max_tokens: 8192,
           messages: [
             {
               role: 'user',
