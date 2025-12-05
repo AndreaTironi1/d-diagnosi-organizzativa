@@ -373,19 +373,42 @@ function createExcelFromResult(result, rowIndex) {
       xlsx.utils.book_append_sheet(workbook, raccSheet, 'Raccomandazioni');
     }
   } else {
-    // Fallback: create a single sheet with the response
-    const fallbackData = [{
-      'Row #': rowIndex + 1,
-      ...result.rowData,
-      'Claude Response': result.response || result.error || 'N/A',
-      'Status': result.success ? 'Success' : 'Error'
-    }];
-    if (result.usage) {
-      fallbackData[0]['Input Tokens'] = result.usage.inputTokens;
-      fallbackData[0]['Output Tokens'] = result.usage.outputTokens;
+    // Fallback: check if parsedData is an array, if so explode it into rows
+    if (parsedData && Array.isArray(parsedData) && parsedData.length > 0) {
+      const sheet = xlsx.utils.json_to_sheet(parsedData);
+      xlsx.utils.book_append_sheet(workbook, sheet, 'Data');
+    } else if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
+      // If parsedData is an object, try to find arrays within it and create sheets
+      let hasSheets = false;
+      for (const [key, value] of Object.entries(parsedData)) {
+        if (Array.isArray(value) && value.length > 0) {
+          const sheetName = key.substring(0, 31); // Excel sheet name limit
+          const sheet = xlsx.utils.json_to_sheet(value);
+          xlsx.utils.book_append_sheet(workbook, sheet, sheetName);
+          hasSheets = true;
+        }
+      }
+
+      // If no arrays found, create a sheet with the object properties
+      if (!hasSheets) {
+        const sheet = xlsx.utils.json_to_sheet([parsedData]);
+        xlsx.utils.book_append_sheet(workbook, sheet, 'Data');
+      }
+    } else {
+      // Ultimate fallback: create a single sheet with the text response
+      const fallbackData = [{
+        'Row #': rowIndex + 1,
+        ...result.rowData,
+        'Claude Response': result.response || result.error || 'N/A',
+        'Status': result.success ? 'Success' : 'Error'
+      }];
+      if (result.usage) {
+        fallbackData[0]['Input Tokens'] = result.usage.inputTokens;
+        fallbackData[0]['Output Tokens'] = result.usage.outputTokens;
+      }
+      const sheet = xlsx.utils.json_to_sheet(fallbackData);
+      xlsx.utils.book_append_sheet(workbook, sheet, 'Result');
     }
-    const sheet = xlsx.utils.json_to_sheet(fallbackData);
-    xlsx.utils.book_append_sheet(workbook, sheet, 'Result');
   }
 
   return workbook;
