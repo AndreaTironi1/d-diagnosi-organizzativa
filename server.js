@@ -323,34 +323,82 @@ function createExcelFromResult(result, rowIndex) {
   console.log(`Response length: ${result.response ? result.response.length : 0} characters`);
 
   if (result.success && result.response) {
+    const response = result.response.trim();
+    console.log(`First 200 chars: ${response.substring(0, 200)}`);
+
     try {
-      const jsonMatch = result.response.match(/```json\s*([\s\S]*?)\s*```/);
-      if (jsonMatch) {
-        console.log('Found JSON in code block');
-        parsedData = JSON.parse(jsonMatch[1]);
-        jsonFound = true;
-        console.log('Successfully parsed JSON from code block');
-        console.log('Data type:', Array.isArray(parsedData) ? 'Array' : typeof parsedData);
-        if (Array.isArray(parsedData)) {
-          console.log(`Array length: ${parsedData.length} items`);
-        }
-      } else {
-        // Try to parse the entire response as JSON
+      // Try multiple JSON extraction strategies
+
+      // Strategy 1: Look for ```json code blocks (case-insensitive, flexible whitespace)
+      const jsonBlockMatch = response.match(/```\s*json\s*([\s\S]*?)\s*```/i);
+      if (jsonBlockMatch) {
+        console.log('Found JSON in code block (```json)');
         try {
-          console.log('Trying to parse entire response as JSON');
-          parsedData = JSON.parse(result.response);
+          parsedData = JSON.parse(jsonBlockMatch[1].trim());
           jsonFound = true;
-          console.log('Successfully parsed entire response as JSON');
-          console.log('Data type:', Array.isArray(parsedData) ? 'Array' : typeof parsedData);
-          if (Array.isArray(parsedData)) {
-            console.log(`Array length: ${parsedData.length} items`);
-          }
+          console.log('✅ Successfully parsed JSON from code block');
         } catch (e) {
-          console.log('Response is not valid JSON, will use text fallback');
+          console.log('Failed to parse JSON from code block:', e.message);
         }
       }
+
+      // Strategy 2: Look for any code block ``` (might contain JSON)
+      if (!jsonFound) {
+        const anyBlockMatch = response.match(/```([\s\S]*?)```/);
+        if (anyBlockMatch) {
+          console.log('Found generic code block (```)');
+          try {
+            parsedData = JSON.parse(anyBlockMatch[1].trim());
+            jsonFound = true;
+            console.log('✅ Successfully parsed JSON from generic code block');
+          } catch (e) {
+            console.log('Generic code block does not contain valid JSON');
+          }
+        }
+      }
+
+      // Strategy 3: Try to find JSON object/array in the response (look for { or [)
+      if (!jsonFound) {
+        const jsonObjectMatch = response.match(/\{[\s\S]*\}/);
+        const jsonArrayMatch = response.match(/\[[\s\S]*\]/);
+
+        if (jsonObjectMatch || jsonArrayMatch) {
+          const jsonString = jsonObjectMatch ? jsonObjectMatch[0] : jsonArrayMatch[0];
+          console.log('Found JSON-like structure in response');
+          try {
+            parsedData = JSON.parse(jsonString);
+            jsonFound = true;
+            console.log('✅ Successfully parsed JSON structure');
+          } catch (e) {
+            console.log('JSON-like structure is not valid JSON:', e.message);
+          }
+        }
+      }
+
+      // Strategy 4: Try to parse the entire response as JSON
+      if (!jsonFound) {
+        console.log('Trying to parse entire response as JSON');
+        try {
+          parsedData = JSON.parse(response);
+          jsonFound = true;
+          console.log('✅ Successfully parsed entire response as JSON');
+        } catch (e) {
+          console.log('Entire response is not valid JSON');
+        }
+      }
+
+      // Log what we found
+      if (jsonFound && parsedData) {
+        console.log('📊 Parsed data type:', Array.isArray(parsedData) ? `Array[${parsedData.length}]` : typeof parsedData);
+        if (typeof parsedData === 'object' && !Array.isArray(parsedData)) {
+          console.log('📊 Object keys:', Object.keys(parsedData).join(', '));
+        }
+      } else {
+        console.log('⚠️ No JSON found in response');
+      }
+
     } catch (e) {
-      console.log('Failed to parse JSON for row', rowIndex, e.message);
+      console.log('❌ Unexpected error in JSON parsing:', e.message);
     }
   }
 
