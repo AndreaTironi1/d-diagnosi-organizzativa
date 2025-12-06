@@ -764,6 +764,8 @@ Lingue straniere e livello richiesto
                     throw new Error(data.error || 'Failed to upload file');
                 }
 
+                console.log('Excel data received:', data);
+
                 excelData = data.data;
                 excelColumns = data.columns;
 
@@ -773,12 +775,19 @@ Lingue straniere e livello richiesto
 
                 const columnList = document.getElementById('columnList');
                 columnList.innerHTML = '';
-                data.columns.forEach(col => {
-                    const tag = document.createElement('div');
-                    tag.className = 'column-tag';
-                    tag.textContent = `[${col}]`;
-                    columnList.appendChild(tag);
-                });
+
+                // Check if columns exist and are an array
+                if (data.columns && Array.isArray(data.columns)) {
+                    console.log('Columns found:', data.columns);
+                    data.columns.forEach(col => {
+                        const tag = document.createElement('div');
+                        tag.className = 'column-tag';
+                        tag.textContent = `[${col}]`;
+                        columnList.appendChild(tag);
+                    });
+                } else {
+                    console.error('No columns found in response:', data);
+                }
 
                 document.getElementById('fileUploadContainer').classList.add('has-file');
                 document.getElementById('excelInfo').classList.add('active');
