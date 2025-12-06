@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prompt Executor - Claude API with Excel</title>
+    <title>Esecutore Prompt - Claude API con Excel</title>
     <style>
         * {
             margin: 0;
@@ -391,14 +391,62 @@
         .header {
             position: relative;
         }
+
+        .version-badge {
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .progress-container {
+            display: none;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .progress-container.active {
+            display: block;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <button class="logout-btn" onclick="handleLogout()">Logout</button>
-            <h1>Prompt Executor with Excel</h1>
-            <p>Upload Excel file and execute prompts for each row using Claude API</p>
+            <button class="logout-btn" onclick="handleLogout()">Esci</button>
+            <h1>Esecutore Prompt con Excel</h1>
+            <p>Carica un file Excel ed esegui prompt per ogni riga usando Claude API</p>
+            <div class="version-badge">v1.13</div>
         </div>
 
         <div class="content">
@@ -406,18 +454,18 @@
             <div class="section">
                 <div class="section-title">
                     <div class="step-number">1</div>
-                    <span>Upload Excel File</span>
+                    <span>Carica File Excel</span>
                 </div>
                 <div class="file-upload-container" id="fileUploadContainer" onclick="document.getElementById('excelFile').click()">
                     <div class="upload-icon">📊</div>
-                    <p><strong>Click to upload Excel file</strong></p>
-                    <p class="hint">Supports .xlsx and .xls files</p>
+                    <p><strong>Clicca per caricare un file Excel</strong></p>
+                    <p class="hint">Supporta file .xlsx e .xls</p>
                     <input type="file" id="excelFile" accept=".xlsx,.xls" onchange="handleFileUpload(event)">
                 </div>
                 <div class="excel-info" id="excelInfo">
-                    <p><strong>File loaded:</strong> <span id="fileName"></span></p>
-                    <p><strong>Rows:</strong> <span id="rowCount"></span></p>
-                    <p><strong>Columns:</strong></p>
+                    <p><strong>File caricato:</strong> <span id="fileName"></span></p>
+                    <p><strong>Righe:</strong> <span id="rowCount"></span></p>
+                    <p><strong>Colonne:</strong></p>
                     <div class="column-list" id="columnList"></div>
                 </div>
             </div>
@@ -428,21 +476,17 @@
             <div class="section">
                 <div class="section-title">
                     <div class="step-number">2</div>
-                    <span>Enter Prompt Template</span>
+                    <span>Inserisci Template Prompt</span>
                 </div>
-                <label for="modelSelect">Select Claude Model</label>
+                <label for="modelSelect">Seleziona Modello Claude</label>
                 <select id="modelSelect" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-bottom: 20px; background: white; cursor: pointer;">
-                    <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 (Recommended)</option>
+                    <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 (Consigliato)</option>
                     <option value="claude-opus-4-20250514">Claude Opus 4</option>
-                    <option value="claude-haiku-4-20250514">Claude Haiku 4 (Faster)</option>
+                    <option value="claude-haiku-4-20250514">Claude Haiku 4 (Più veloce)</option>
                 </select>
-                <label for="prompt">Prompt Template</label>
-                <textarea id="prompt" rows="8" placeholder="Enter your prompt here. Use [column_name] to reference Excel columns.&#10;&#10;Example: Write a summary about [Product_Name] which costs [Price] and is in the [Category] category."></textarea>
-                <div class="hint">Use square brackets [column_name] to reference columns from your Excel file</div>
-                <div class="hint" style="margin-top: 10px; background: #e3f2fd; padding: 10px; border-radius: 6px;">
-                    <strong>💡 Tip for structured output:</strong> To get data as Excel tables, ask Claude to return data in JSON format within code blocks. Example:<br>
-                    <code style="font-size: 11px;">Please analyze [Data] and return results as JSON: ```json [{"field1": "value", "field2": "value"}] ```</code>
-                </div>
+                <label for="prompt">Template Prompt</label>
+                <textarea id="prompt" rows="8" placeholder="Inserisci il tuo prompt qui. Usa [nome_colonna] per riferimenti alle colonne Excel.&#10;&#10;Esempio: Scrivi un riassunto su [Nome_Prodotto] che costa [Prezzo] nella categoria [Categoria]."></textarea>
+                <div class="hint">Usa parentesi quadre [nome_colonna] per riferimenti alle colonne del tuo file Excel</div>
             </div>
 
             <div class="divider"></div>
@@ -451,46 +495,57 @@
             <div class="section">
                 <div class="section-title">
                     <div class="step-number">3</div>
-                    <span>Execute Batch Processing</span>
+                    <span>Esegui Elaborazione</span>
                 </div>
                 <button class="btn-primary" id="executeBtn" onclick="executeBatch()" disabled>
-                    Execute for All Rows
+                    Esegui per Tutte le Righe
                 </button>
+            </div>
+
+            <!-- Progress Indicator -->
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-info">
+                    <span id="progressText">Elaborazione in corso...</span>
+                    <span id="progressTime">0s</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
             </div>
 
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                <p id="loadingText">Processing with Claude API...</p>
+                <p id="loadingText">Elaborazione con Claude API...</p>
             </div>
 
             <!-- Results -->
             <div class="results-container" id="resultsContainer">
                 <div class="results-summary">
-                    <h3>Batch Processing Results</h3>
+                    <h3>Risultati Elaborazione</h3>
                     <div class="summary-stats">
                         <div class="stat-box">
-                            <div class="stat-label">Total Rows</div>
+                            <div class="stat-label">Righe Totali</div>
                             <div class="stat-value" id="totalRows">0</div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-label">Successful</div>
+                            <div class="stat-label">Successi</div>
                             <div class="stat-value" id="successCount">0</div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-label">Errors</div>
+                            <div class="stat-label">Errori</div>
                             <div class="stat-value" id="errorCount">0</div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-label">Input Tokens</div>
+                            <div class="stat-label">Token Input</div>
                             <div class="stat-value" id="inputTokens">0</div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-label">Output Tokens</div>
+                            <div class="stat-label">Token Output</div>
                             <div class="stat-value" id="outputTokens">0</div>
                         </div>
                     </div>
-                    <button class="download-btn" onclick="downloadResults()">Download Results as JSON</button>
-                    <button class="download-btn" onclick="downloadExcelZip()" style="background: #2196f3; margin-left: 10px;">📦 Download All as ZIP</button>
+                    <button class="download-btn" onclick="downloadResults()">Scarica Risultati JSON</button>
+                    <button class="download-btn" onclick="downloadExcelZip()" style="background: #2196f3; margin-left: 10px;">📦 Scarica Tutto ZIP</button>
                 </div>
 
                 <div id="resultsItems"></div>
@@ -574,11 +629,11 @@
                 document.getElementById('excelInfo').classList.add('active');
                 document.getElementById('executeBtn').disabled = false;
 
-                alert(`Excel file loaded successfully!\n${data.rowCount} rows found.`);
+                alert(`File Excel caricato con successo!\n${data.rowCount} righe trovate.`);
 
             } catch (error) {
                 console.error('Error:', error);
-                alert('Failed to upload Excel file: ' + error.message);
+                alert('Errore nel caricamento del file Excel: ' + error.message);
             }
         }
 
@@ -587,19 +642,29 @@
             const model = document.getElementById('modelSelect').value;
 
             if (!prompt) {
-                alert('Please enter a prompt template');
+                alert('Inserisci un template di prompt');
                 return;
             }
 
             if (!excelData) {
-                alert('Please upload an Excel file first');
+                alert('Carica prima un file Excel');
                 return;
             }
 
-            // Show loading
+            // Show loading and progress
             document.getElementById('loading').classList.add('active');
+            document.getElementById('progressContainer').classList.add('active');
             document.getElementById('resultsContainer').classList.remove('active');
             document.getElementById('executeBtn').disabled = true;
+
+            // Start timer
+            const startTime = Date.now();
+            const timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                document.getElementById('progressTime').textContent = `${elapsed}s`;
+            }, 1000);
+
+            document.getElementById('progressText').textContent = `Elaborazione ${excelData.length} righe...`;
 
             try {
                 const response = await fetch('/api/execute-batch', {
@@ -608,6 +673,7 @@
                     body: JSON.stringify({ prompt, excelData, model })
                 });
 
+                clearInterval(timerInterval);
                 const data = await response.json();
 
                 if (!response.ok) {
@@ -626,10 +692,14 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                alert('Failed to execute batch: ' + error.message);
+                clearInterval(timerInterval);
+                alert('Errore nell\'esecuzione: ' + error.message);
             } finally {
                 document.getElementById('loading').classList.remove('active');
+                document.getElementById('progressContainer').classList.remove('active');
                 document.getElementById('executeBtn').disabled = false;
+                const finalTime = Math.floor((Date.now() - startTime) / 1000);
+                document.getElementById('progressText').textContent = `Completato in ${finalTime}s`;
             }
         }
 
@@ -658,29 +728,29 @@
 
                 resultDiv.innerHTML = `
                     <div class="result-header">
-                        <div class="result-index">Row ${result.rowIndex + 1}</div>
+                        <div class="result-index">Riga ${result.rowIndex + 1}</div>
                         <div style="display: flex; gap: 10px; align-items: center;">
                             <button class="download-btn" onclick="downloadSingleExcel(${result.rowIndex})" style="padding: 6px 12px; font-size: 13px; background: #2196f3;">
-                                📥 Download Excel
+                                📥 Scarica Excel
                             </button>
                             <div class="result-status ${result.success ? 'success' : 'error'}">
-                                ${result.success ? 'Success' : 'Error'}
+                                ${result.success ? 'Successo' : 'Errore'}
                             </div>
                         </div>
                     </div>
 
                     <div class="result-section">
-                        <div class="result-section-title">Row Data</div>
+                        <div class="result-section-title">Dati Riga</div>
                         <div class="result-row-data">${rowDataHTML}</div>
                     </div>
 
                     <div class="result-section">
-                        <div class="result-section-title">Processed Prompt</div>
+                        <div class="result-section-title">Prompt Elaborato</div>
                         <div class="result-content">${result.processedPrompt}</div>
                     </div>
 
                     <div class="result-section">
-                        <div class="result-section-title">${result.success ? 'Claude Response' : 'Error Message'}</div>
+                        <div class="result-section-title">${result.success ? 'Risposta Claude' : 'Messaggio Errore'}</div>
                         <div class="result-content">${result.success ? result.response : result.error}</div>
                     </div>
 
@@ -739,7 +809,7 @@
                 URL.revokeObjectURL(url);
             } catch (error) {
                 console.error('Error downloading ZIP:', error);
-                alert('Failed to download ZIP file: ' + error.message);
+                alert('Errore nel download del file ZIP: ' + error.message);
             }
         }
 
@@ -756,7 +826,7 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to generate Excel file');
+                    throw new Error('Errore nella generazione del file Excel');
                 }
 
                 // Get the blob from response
@@ -782,7 +852,7 @@
                 URL.revokeObjectURL(url);
             } catch (error) {
                 console.error('Error downloading Excel:', error);
-                alert('Failed to download Excel file: ' + error.message);
+                alert('Errore nel download del file Excel: ' + error.message);
             }
         }
 

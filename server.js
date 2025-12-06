@@ -319,19 +319,34 @@ function createExcelFromResult(result, rowIndex) {
   let parsedData = null;
   let jsonFound = false;
 
+  console.log(`\n=== Processing Excel for row ${rowIndex} ===`);
+  console.log(`Response length: ${result.response ? result.response.length : 0} characters`);
+
   if (result.success && result.response) {
     try {
       const jsonMatch = result.response.match(/```json\s*([\s\S]*?)\s*```/);
       if (jsonMatch) {
+        console.log('Found JSON in code block');
         parsedData = JSON.parse(jsonMatch[1]);
         jsonFound = true;
+        console.log('Successfully parsed JSON from code block');
+        console.log('Data type:', Array.isArray(parsedData) ? 'Array' : typeof parsedData);
+        if (Array.isArray(parsedData)) {
+          console.log(`Array length: ${parsedData.length} items`);
+        }
       } else {
         // Try to parse the entire response as JSON
         try {
+          console.log('Trying to parse entire response as JSON');
           parsedData = JSON.parse(result.response);
           jsonFound = true;
+          console.log('Successfully parsed entire response as JSON');
+          console.log('Data type:', Array.isArray(parsedData) ? 'Array' : typeof parsedData);
+          if (Array.isArray(parsedData)) {
+            console.log(`Array length: ${parsedData.length} items`);
+          }
         } catch (e) {
-          // Not valid JSON, that's ok - will use text fallback
+          console.log('Response is not valid JSON, will use text fallback');
         }
       }
     } catch (e) {
@@ -384,26 +399,33 @@ function createExcelFromResult(result, rowIndex) {
   } else {
     // Fallback: check if parsedData is an array, if so explode it into rows
     if (parsedData && Array.isArray(parsedData) && parsedData.length > 0) {
+      console.log(`Creating Data sheet with ${parsedData.length} rows from array`);
       const sheet = xlsx.utils.json_to_sheet(parsedData);
       xlsx.utils.book_append_sheet(workbook, sheet, 'Data');
+      console.log('✅ Array exploded into Excel rows successfully');
     } else if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
+      console.log('parsedData is an object (not array), looking for arrays inside...');
       // If parsedData is an object, try to find arrays within it and create sheets
       let hasSheets = false;
       for (const [key, value] of Object.entries(parsedData)) {
         if (Array.isArray(value) && value.length > 0) {
           const sheetName = key.substring(0, 31); // Excel sheet name limit
+          console.log(`Creating sheet '${sheetName}' with ${value.length} rows from object property '${key}'`);
           const sheet = xlsx.utils.json_to_sheet(value);
           xlsx.utils.book_append_sheet(workbook, sheet, sheetName);
           hasSheets = true;
+          console.log(`✅ Array '${key}' exploded into Excel rows successfully`);
         }
       }
 
       // If no arrays found, create a sheet with the object properties
       if (!hasSheets) {
+        console.log('No arrays found in object, creating single row with object properties');
         const sheet = xlsx.utils.json_to_sheet([parsedData]);
         xlsx.utils.book_append_sheet(workbook, sheet, 'Data');
       }
     } else {
+      console.log('⚠️ Using fallback - no parseable JSON data found');
       // Ultimate fallback: create a simple info sheet without raw JSON/text in cells
       const fallbackData = [{
         'Row #': rowIndex + 1,
