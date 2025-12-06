@@ -840,7 +840,7 @@ Lingue straniere e livello richiesto
                         const response = await fetch('/api/execute', {
                             method: 'POST',
                             headers: getAuthHeaders(),
-                            body: JSON.stringify({ prompt, rowData, rowIndex: i, model })
+                            body: JSON.stringify({ prompt, variables: rowData, rowIndex: i, model })
                         });
 
                         const data = await response.json();

@@ -94,7 +94,7 @@ function extractVariableNames(template) {
 // API endpoint to execute prompt
 app.post('/api/execute', authenticateToken, async (req, res) => {
   try {
-    const { prompt, variables } = req.body;
+    const { prompt, variables, rowIndex, model } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
@@ -109,9 +109,12 @@ app.post('/api/execute', authenticateToken, async (req, res) => {
     // Replace variables in the prompt
     const processedPrompt = replaceVariables(prompt, variables || {});
 
+    // Use provided model or default to Sonnet 4.5
+    const selectedModel = model || 'claude-sonnet-4-5-20250929';
+
     // Call Claude API
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
+      model: selectedModel,
       max_tokens: 8192,
       messages: [
         {
@@ -123,6 +126,8 @@ app.post('/api/execute', authenticateToken, async (req, res) => {
 
     res.json({
       success: true,
+      rowIndex: rowIndex !== undefined ? rowIndex : 0,
+      rowData: variables || {},
       processedPrompt,
       response: message.content[0].text,
       usage: {
