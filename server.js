@@ -444,7 +444,23 @@ function createExcelFromResult(result, rowIndex) {
       const raccSheet = xlsx.utils.json_to_sheet(raccData);
       xlsx.utils.book_append_sheet(workbook, raccSheet, 'Raccomandazioni');
     }
-  } else {
+  }
+
+  // ALWAYS add a Debug sheet with the raw response for troubleshooting
+  if (result.success && result.response) {
+    const debugData = [{
+      'Row Index': rowIndex + 1,
+      'Response Length': result.response.length,
+      'JSON Found': jsonFound ? 'YES' : 'NO',
+      'Parsed Type': parsedData ? (Array.isArray(parsedData) ? `Array[${parsedData.length}]` : typeof parsedData) : 'null',
+      'First 500 chars': result.response.substring(0, 500),
+      'Last 500 chars': result.response.substring(Math.max(0, result.response.length - 500))
+    }];
+    const debugSheet = xlsx.utils.json_to_sheet(debugData);
+    xlsx.utils.book_append_sheet(workbook, debugSheet, 'DEBUG');
+  }
+
+  if (!parsedData || (!parsedData.tabella_1_normativa_generale && !Array.isArray(parsedData) && typeof parsedData !== 'object')) {
     // Fallback: check if parsedData is an array, if so explode it into rows
     if (parsedData && Array.isArray(parsedData) && parsedData.length > 0) {
       console.log(`Creating Data sheet with ${parsedData.length} rows from array`);
