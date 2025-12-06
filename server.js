@@ -317,13 +317,22 @@ function createExcelFromResult(result, rowIndex) {
 
   // Try to parse JSON from Claude response
   let parsedData = null;
+  let jsonFound = false;
+
   if (result.success && result.response) {
     try {
       const jsonMatch = result.response.match(/```json\s*([\s\S]*?)\s*```/);
       if (jsonMatch) {
         parsedData = JSON.parse(jsonMatch[1]);
+        jsonFound = true;
       } else {
-        parsedData = JSON.parse(result.response);
+        // Try to parse the entire response as JSON
+        try {
+          parsedData = JSON.parse(result.response);
+          jsonFound = true;
+        } catch (e) {
+          // Not valid JSON, that's ok - will use text fallback
+        }
       }
     } catch (e) {
       console.log('Failed to parse JSON for row', rowIndex, e.message);
@@ -395,19 +404,37 @@ function createExcelFromResult(result, rowIndex) {
         xlsx.utils.book_append_sheet(workbook, sheet, 'Data');
       }
     } else {
-      // Ultimate fallback: create a single sheet with the text response
+      // Ultimate fallback: create a simple info sheet without raw JSON/text in cells
       const fallbackData = [{
         'Row #': rowIndex + 1,
         ...result.rowData,
-        'Claude Response': result.response || result.error || 'N/A',
-        'Status': result.success ? 'Success' : 'Error'
+        'Status': result.success ? 'Success - No structured data found' : 'Error',
+        'Note': result.success ? 'Response did not contain parseable JSON data' : (result.error || 'Request failed')
       }];
       if (result.usage) {
         fallbackData[0]['Input Tokens'] = result.usage.inputTokens;
         fallbackData[0]['Output Tokens'] = result.usage.outputTokens;
       }
       const sheet = xlsx.utils.json_to_sheet(fallbackData);
-      xlsx.utils.book_append_sheet(workbook, sheet, 'Result');
+      xlsx.utils.book_append_sheet(workbook, sheet, 'Info');
+
+      // If there's a response but it's not JSON, create a separate text sheet with chunks
+      if (result.success && result.response && !jsonFound) {
+        // Split long text into manageable chunks (Excel cell limit is 32767 chars)
+        const maxChunkSize = 30000;
+        const responseText = result.response;
+        const chunks = [];
+
+        for (let i = 0; i < responseText.length; i += maxChunkSize) {
+          chunks.push({
+            'Part': Math.floor(i / maxChunkSize) + 1,
+            'Content': responseText.substring(i, i + maxChunkSize)
+          });
+        }
+
+        const textSheet = xlsx.utils.json_to_sheet(chunks);
+        xlsx.utils.book_append_sheet(workbook, textSheet, 'Response Text');
+      }
     }
   }
 
