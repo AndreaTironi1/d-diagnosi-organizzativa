@@ -91,6 +91,32 @@ function extractVariableNames(template) {
   return Array.from(variables);
 }
 
+// API endpoint to get account balance/credits
+app.get('/api/account-balance', authenticateToken, async (req, res) => {
+  try {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(500).json({
+        error: 'ANTHROPIC_API_KEY not configured'
+      });
+    }
+
+    // Get account balance using Anthropic SDK
+    // Note: This is a placeholder - Anthropic API doesn't expose balance endpoint directly
+    // We'll return usage info from recent request instead
+    res.json({
+      success: true,
+      message: 'Balance information not available via API',
+      note: 'Monitor usage at https://console.anthropic.com'
+    });
+
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to get balance'
+    });
+  }
+});
+
 // API endpoint to execute prompt
 app.post('/api/execute', authenticateToken, async (req, res) => {
   try {

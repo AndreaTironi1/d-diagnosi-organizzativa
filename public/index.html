@@ -486,9 +486,14 @@
                 </select>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <label for="prompt">Template Prompt</label>
-                    <button onclick="loadDiagnosiPrompt()" style="padding: 6px 12px; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600;">
-                        📋 PROMPT DIAGNOSI ORGANIZZATIVA
-                    </button>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="loadDiagnosiPrompt()" style="padding: 6px 12px; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                            📋 CARICA PROMPT
+                        </button>
+                        <button onclick="downloadPrompt()" style="padding: 6px 12px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                            💾 SCARICA PROMPT
+                        </button>
+                    </div>
                 </div>
                 <textarea id="prompt" rows="8" placeholder="Inserisci il tuo prompt qui. Usa [nome_colonna] per riferimenti alle colonne Excel.&#10;&#10;Esempio: Scrivi un riassunto su [Nome_Prodotto] che costa [Prezzo] nella categoria [Categoria]."></textarea>
                 <div class="hint">Usa parentesi quadre [nome_colonna] per riferimenti alle colonne del tuo file Excel</div>
@@ -505,6 +510,18 @@
                 <button class="btn-primary" id="executeBtn" onclick="executeBatch()" disabled>
                     Esegui per Tutte le Righe
                 </button>
+            </div>
+
+            <!-- Account Usage Info -->
+            <div class="progress-container" id="accountInfo" style="background: #e3f2fd; border-left: 4px solid #2196f3;">
+                <div style="font-size: 13px; color: #1976d2;">
+                    <strong>💳 Info Account Anthropic</strong>
+                    <div style="margin-top: 8px; font-size: 12px; color: #555;">
+                        Per monitorare il credito residuo e l'utilizzo, visita:
+                        <a href="https://console.anthropic.com" target="_blank" style="color: #2196f3; text-decoration: underline;">console.anthropic.com</a>
+                    </div>
+                    <div id="accountUsageInfo" style="margin-top: 8px; font-size: 12px; color: #555;"></div>
+                </div>
             </div>
 
             <!-- Progress Indicator -->
@@ -600,6 +617,37 @@
             document.getElementById('versionBadge').textContent = version;
         }
         setBuildVersion();
+
+        // Toggle collapsible sections
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            const icon = document.getElementById(`${sectionId}-icon`);
+
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                icon.textContent = '▼';
+            } else {
+                section.style.display = 'none';
+                icon.textContent = '▶';
+            }
+        }
+
+        // Download current prompt as text file
+        function downloadPrompt() {
+            const promptText = document.getElementById('prompt').value;
+            if (!promptText.trim()) {
+                alert('Nessun prompt da scaricare. Inserisci o carica un prompt prima.');
+                return;
+            }
+
+            const blob = new Blob([promptText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `prompt_diagnosi_organizzativa_${Date.now()}.txt`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
 
         // Load Diagnosi Organizzativa prompt
         function loadDiagnosiPrompt() {
@@ -815,6 +863,10 @@ Lingue straniere e livello richiesto
                 return;
             }
 
+            // Show account info
+            document.getElementById('accountInfo').classList.add('active');
+            document.getElementById('accountUsageInfo').innerHTML = '⏳ Inizio elaborazione... Monitora l\'utilizzo su <a href="https://console.anthropic.com" target="_blank" style="color: #2196f3;">console.anthropic.com</a>';
+
             // Show loading and progress
             document.getElementById('loading').classList.add('active');
             document.getElementById('progressContainer').classList.add('active');
@@ -905,9 +957,21 @@ Lingue straniere e livello richiesto
                 const finalTime = Math.floor((Date.now() - startTime) / 1000);
                 document.getElementById('totalTime').textContent = `${finalTime}s`;
 
+                // Update account usage info with final stats
+                const totalTokens = totalUsage.inputTokens + totalUsage.outputTokens;
+                const estimatedCost = (totalTokens / 1000000 * 3).toFixed(4); // Rough estimate at $3 per million tokens
+                document.getElementById('accountUsageInfo').innerHTML = `
+                    ✅ <strong>Elaborazione completata!</strong><br>
+                    📊 Token totali utilizzati: <strong>${totalTokens.toLocaleString()}</strong> (Input: ${totalUsage.inputTokens.toLocaleString()} + Output: ${totalUsage.outputTokens.toLocaleString()})<br>
+                    💵 Costo stimato: ~$${estimatedCost} USD<br>
+                    🔗 Verifica il saldo su <a href="https://console.anthropic.com" target="_blank" style="color: #2196f3;">console.anthropic.com</a>
+                `;
+
             } catch (error) {
                 console.error('Error:', error);
                 alert('Errore nell\'esecuzione: ' + error.message);
+                // Update account info with error
+                document.getElementById('accountUsageInfo').innerHTML = '❌ Errore durante l\'elaborazione. Controlla la console per dettagli.';
             } finally {
                 clearInterval(timerInterval);
                 document.getElementById('loading').classList.remove('active');
@@ -941,6 +1005,9 @@ Lingue straniere e livello richiesto
                         </div>
                     `).join('');
 
+                const promptId = `prompt-${result.rowIndex}`;
+                const responseId = `response-${result.rowIndex}`;
+
                 resultDiv.innerHTML = `
                     <div class="result-header">
                         <div class="result-index">Riga ${result.rowIndex + 1}</div>
@@ -960,13 +1027,17 @@ Lingue straniere e livello richiesto
                     </div>
 
                     <div class="result-section">
-                        <div class="result-section-title">Prompt Elaborato</div>
-                        <div class="result-content">${result.processedPrompt}</div>
+                        <div class="result-section-title" onclick="toggleSection('${promptId}')" style="cursor: pointer; user-select: none;">
+                            <span id="${promptId}-icon">▶</span> Prompt Elaborato (click per espandere)
+                        </div>
+                        <div class="result-content" id="${promptId}" style="display: none;">${result.processedPrompt}</div>
                     </div>
 
                     <div class="result-section">
-                        <div class="result-section-title">${result.success ? 'Risposta Claude' : 'Messaggio Errore'}</div>
-                        <div class="result-content">${result.success ? result.response : result.error}</div>
+                        <div class="result-section-title" onclick="toggleSection('${responseId}')" style="cursor: pointer; user-select: none;">
+                            <span id="${responseId}-icon">▶</span> ${result.success ? 'Risposta Claude' : 'Messaggio Errore'} (click per espandere)
+                        </div>
+                        <div class="result-content" id="${responseId}" style="display: none;">${result.success ? result.response : result.error}</div>
                     </div>
 
                     ${result.success ? `
