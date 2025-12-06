@@ -1,0 +1,121 @@
+ANALISI COMPETENZE PER RUOLI DELLA PUBBLICA AMMINISTRAZIONE
+
+# CONTESTO
+Sei un esperto in organizzazione del lavoro pubblico, con profonda conoscenza di:
+- CCNL Funzioni Locali e normativa PA (D.Lgs. 165/2001, 267/2000)
+- Sistemi di competenze per PA, PIAO, DUP, PEG
+- Normative settoriali e regionali
+
+# DATI DEL PROFILO
+- Area Contrattuale: Dirigente
+- Declaratoria CCNL: La qualifica dirigenziale implica un elevato grado di autonomia gestionale, poteri decisionali e responsabilità per i risultati ottenuti, in conformità agli obiettivi definiti dagli organi politici dell'ente.
+- Profilo professionale: Dirigente Tecnico
+- Settore operativo: Ecologia e ambiente
+- Regione: Sardegna
+
+# REGOLE FONDAMENTALI
+1. NON inventare norme o articoli inesistenti
+2. Usa SOLO riferimenti normativi verificabili e reali
+3. Formato norme: [Tipo] [N°]/[Anno] – [Titolo completo]
+   Esempio: D.Lgs. 267/2000 – Testo Unico Enti Locali
+4. Se non esiste norma applicabile: "Nessun riferimento normativo specifico"
+5. Per normative regionali: cita SOLO atti realmente esistenti della Sardegna
+6. Nel CSV usa il punto e virgola (;) come separatore
+7. Se un campo contiene virgole o punto e virgola, racchiudilo tra doppi apici
+
+# TABELLE RICHIESTE (8 obbligatorie)
+
+**TABELLA_1** – Normativa generale enti locali
+Ambiti: ordinamento, procedimento, contratti pubblici, trasparenza, anticorruzione, privacy
+
+**TABELLA_2** – Normativa nazionale e regionale specifica
+Per Regione Sardegna e Settore Ecologia e ambiente
+
+**TABELLA_3** – Normativa specifica del profilo
+Focus: trasparenza, anticorruzione, privacy per il profilo Dirigente Tecnico
+
+**TABELLA_4** – Competenze tecnico-specialistiche
+Competenze tecniche distintive del profilo
+
+**TABELLA_5** – Competenze gestionali e procedurali
+Gestione processi, procedure, workflow
+
+**TABELLA_6** – Competenze trasversali
+Da elenco: problem solving, comunicazione, collaborazione, orientamento servizio, leadership, etc.
+
+**TABELLA_7** – Competenze informatiche
+Software, sistemi, strumenti digitali
+
+**TABELLA_8** – Competenze linguistiche
+Lingue straniere e livello richiesto
+
+# STRUTTURA COLONNE (identica per tutte le 8 tabelle)
+1. Tabella
+2. Area_Contrattuale
+3. Profilo
+4. Competenza_Conoscenza
+5. Descrizione_Operativa
+6. Riferimenti_Normativi
+7. Peso_1_10
+8. Livello_Richiesto_1_10
+
+# FORMATO OUTPUT CSV
+
+Restituisci **ESCLUSIVAMENTE** il CSV seguente, senza testo introduttivo, conclusivo o markdown.
+Inizia direttamente con l'intestazione e i dati.
+NON usare blocchi di codice con ```.
+Restituisci SOLO il CSV puro.
+
+ESEMPIO FORMATO:
+Tabella;Area_Contrattuale;Profilo;Competenza_Conoscenza;Descrizione_Operativa;Riferimenti_Normativi;Peso_1_10;Livello_Richiesto_1_10
+TABELLA_1;Dirigente;Dirigente Tecnico;Ordinamento enti locali;Conoscenza approfondita della struttura e organizzazione degli enti locali;D.Lgs. 267/2000 – Testo Unico Enti Locali;9;8
+
+# REGOLE DI FORMATTAZIONE CSV
+1. Usa SEMPRE il punto e virgola (;) come separatore
+2. NON usare virgole nei campi (sostituiscile con "e" o "-")
+3. Se un campo contiene punto e virgola, racchiudilo tra "virgolette doppie"
+4. NON usare a capo all'interno dei campi
+5. Ogni riga è una competenza/conoscenza
+6. La prima riga DEVE essere l'intestazione
+7. Tutte le 8 tabelle vanno nello stesso CSV
+
+# CONTENUTO TABELLE
+
+**TABELLA_1** – Normativa generale enti locali
+Ambiti: ordinamento enti locali - procedimento amministrativo - contratti pubblici - diritto amministrativo - documentazione - diritti e doveri - trasparenza - anticorruzione - privacy
+
+**TABELLA_2** – Normativa nazionale e regionale
+Per Regione: Sardegna
+Per Settore: Ecologia e ambiente
+
+**TABELLA_3** – Normativa specifica del profilo
+Ambiti: trasparenza - anticorruzione - privacy
+
+**TABELLA_4** – Competenze tecnico-specialistiche
+Competenze tecniche distintive del profilo Dirigente Tecnico nel settore Ecologia e ambiente
+
+**TABELLA_5** – Competenze gestionali e procedurali
+Gestione processi - procedure - workflow
+
+**TABELLA_6** – Competenze trasversali
+Consapevolezza del contesto - Soluzione problemi - Consapevolezza digitale - Comunicazione - Collaborazione - Orientamento al servizio - Gestione emozioni - Affidabilità - Accuratezza - Iniziativa - Orientamento al risultato - Gestione processi - Guida del gruppo - Sviluppo collaboratori - Ottimizzazione risorse
+
+**TABELLA_7** – Competenze informatiche
+Software - sistemi - strumenti digitali
+
+**TABELLA_8** – Competenze linguistiche
+Lingue straniere e livello richiesto
+
+# CHECKLIST FINALE
+✓ Intestazione CSV presente
+✓ Tutte e 8 tabelle presenti con dati (minimo 3-5 competenze per tabella)
+✓ 8 colonne per ogni riga (inclusa colonna Tabella)
+✓ Norme nel formato [Tipo N°/Anno – Titolo]
+✓ Fallback "Nessun riferimento normativo specifico" dove necessario
+✓ Separatore punto e virgola (;)
+✓ Nessun testo aggiuntivo - solo CSV puro
+✓ Nessun blocco markdown (no ```)
+✓ Prima riga è l'intestazione
+✓ Ogni competenza è una riga separata
+
+IMPORTANTE: La risposta DEVE contenere SOLO il CSV, senza introduzioni, spiegazioni o blocchi di codice.
