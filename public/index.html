@@ -446,7 +446,7 @@
             <button class="logout-btn" onclick="handleLogout()">Esci</button>
             <h1>Esecutore Prompt con Excel</h1>
             <p>Carica un file Excel ed esegui prompt per ogni riga usando Claude API</p>
-            <div class="version-badge">v1.13</div>
+            <div class="version-badge" id="versionBadge">Loading...</div>
         </div>
 
         <div class="content">
@@ -484,7 +484,12 @@
                     <option value="claude-opus-4-20250514">Claude Opus 4</option>
                     <option value="claude-haiku-4-20250514">Claude Haiku 4 (Più veloce)</option>
                 </select>
-                <label for="prompt">Template Prompt</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label for="prompt">Template Prompt</label>
+                    <button onclick="loadDiagnosiPrompt()" style="padding: 6px 12px; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                        📋 PROMPT DIAGNOSI ORGANIZZATIVA
+                    </button>
+                </div>
                 <textarea id="prompt" rows="8" placeholder="Inserisci il tuo prompt qui. Usa [nome_colonna] per riferimenti alle colonne Excel.&#10;&#10;Esempio: Scrivi un riassunto su [Nome_Prodotto] che costa [Prezzo] nella categoria [Categoria]."></textarea>
                 <div class="hint">Usa parentesi quadre [nome_colonna] per riferimenti alle colonne del tuo file Excel</div>
             </div>
@@ -543,9 +548,12 @@
                             <div class="stat-label">Token Output</div>
                             <div class="stat-value" id="outputTokens">0</div>
                         </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Tempo Totale</div>
+                            <div class="stat-value" id="totalTime">0s</div>
+                        </div>
                     </div>
-                    <button class="download-btn" onclick="downloadResults()">Scarica Risultati JSON</button>
-                    <button class="download-btn" onclick="downloadExcelZip()" style="background: #2196f3; margin-left: 10px;">📦 Scarica Tutto ZIP</button>
+                    <button class="download-btn" onclick="downloadExcelZip()" style="background: #2196f3;">📦 Scarica Tutto ZIP</button>
                 </div>
 
                 <div id="resultsItems"></div>
@@ -579,6 +587,153 @@
 
         // Check authentication on page load
         checkAuth();
+
+        // Set version badge with build timestamp
+        function setBuildVersion() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const version = `${year}${month}${day}-${hours}${minutes}`;
+            document.getElementById('versionBadge').textContent = version;
+        }
+        setBuildVersion();
+
+        // Load Diagnosi Organizzativa prompt
+        function loadDiagnosiPrompt() {
+            const diagnosiPrompt = `ANALISI COMPETENZE PER RUOLI DELLA PUBBLICA AMMINISTRAZIONE
+
+# CONTESTO
+Sei un esperto in organizzazione del lavoro pubblico, con profonda conoscenza di:
+- CCNL Funzioni Locali e normativa PA (D.Lgs. 165/2001, 267/2000)
+- Sistemi di competenze per PA, PIAO, DUP, PEG
+- Normative settoriali e regionali
+
+# DATI DEL PROFILO
+- Area Contrattuale: [AREA]
+- Declaratoria CCNL: [DECLARATORIA]
+- Profilo professionale: [PROFILO]
+- Settore operativo: [SETTORE]
+- Regione: [REGIONE]
+
+# REGOLE FONDAMENTALI
+1. NON inventare norme o articoli inesistenti
+2. Usa SOLO riferimenti normativi verificabili e reali
+3. Formato norme: [Tipo] [N°]/[Anno] – [Titolo completo]
+   Esempio: D.Lgs. 267/2000 – Testo Unico Enti Locali
+4. Se non esiste norma applicabile: "Nessun riferimento normativo specifico"
+5. Per normative regionali: cita SOLO atti realmente esistenti della [REGIONE]
+6. Nel CSV usa il punto e virgola (;) come separatore
+7. Se un campo contiene virgole o punto e virgola, racchiudilo tra doppi apici
+
+# TABELLE RICHIESTE (8 obbligatorie)
+
+**TABELLA_1** – Normativa generale enti locali
+Ambiti: ordinamento, procedimento, contratti pubblici, trasparenza, anticorruzione, privacy
+
+**TABELLA_2** – Normativa nazionale e regionale specifica
+Per Regione [REGIONE] e Settore [SETTORE]
+
+**TABELLA_3** – Normativa specifica del profilo
+Focus: trasparenza, anticorruzione, privacy per il profilo [PROFILO]
+
+**TABELLA_4** – Competenze tecnico-specialistiche
+Competenze tecniche distintive del profilo
+
+**TABELLA_5** – Competenze gestionali e procedurali
+Gestione processi, procedure, workflow
+
+**TABELLA_6** – Competenze trasversali
+Da elenco: problem solving, comunicazione, collaborazione, orientamento servizio, leadership, etc.
+
+**TABELLA_7** – Competenze informatiche
+Software, sistemi, strumenti digitali
+
+**TABELLA_8** – Competenze linguistiche
+Lingue straniere e livello richiesto
+
+# STRUTTURA COLONNE (identica per tutte le 8 tabelle)
+1. Tabella
+2. Area_Contrattuale
+3. Profilo
+4. Competenza_Conoscenza
+5. Descrizione_Operativa
+6. Riferimenti_Normativi
+7. Peso_1_10
+8. Livello_Richiesto_1_10
+
+# FORMATO OUTPUT CSV
+
+Restituisci **ESCLUSIVAMENTE** il CSV seguente, senza testo introduttivo, conclusivo o markdown.
+Inizia direttamente con l'intestazione e i dati.
+
+\`\`\`
+Tabella;Area_Contrattuale;Profilo;Competenza_Conoscenza;Descrizione_Operativa;Riferimenti_Normativi;Peso_1_10;Livello_Richiesto_1_10
+TABELLA_1;[area];[profilo];[competenza];[descrizione];[norme];8;7
+TABELLA_1;[area];[profilo];[competenza];[descrizione];[norme];9;8
+TABELLA_2;[area];[profilo];[competenza];[descrizione];[norme];7;6
+TABELLA_2;[area];[profilo];[competenza];[descrizione];[norme];8;7
+TABELLA_3;[area];[profilo];[competenza];[descrizione];[norme];9;8
+TABELLA_4;[area];[profilo];[competenza];[descrizione];[norme];8;7
+TABELLA_5;[area];[profilo];[competenza];[descrizione];[norme];7;6
+TABELLA_6;[area];[profilo];[competenza];[descrizione];[norme];6;5
+TABELLA_7;[area];[profilo];[competenza];[descrizione];[norme];5;5
+TABELLA_8;[area];[profilo];[competenza];[descrizione];[norme];4;4
+\`\`\`
+
+# REGOLE DI FORMATTAZIONE CSV
+1. Usa SEMPRE il punto e virgola (;) come separatore
+2. NON usare virgole nei campi (sostituiscile con "e" o "-")
+3. Se un campo contiene punto e virgola, racchiudilo tra "virgolette doppie"
+4. NON usare a capo all'interno dei campi
+5. Ogni riga è una competenza/conoscenza
+6. La prima riga DEVE essere l'intestazione
+7. Tutte le 8 tabelle vanno nello stesso CSV
+
+# CONTENUTO TABELLE
+
+**TABELLA_1** – Normativa generale enti locali
+Ambiti: ordinamento enti locali - procedimento amministrativo - contratti pubblici - diritto amministrativo - documentazione - diritti e doveri - trasparenza - anticorruzione - privacy
+
+**TABELLA_2** – Normativa nazionale e regionale
+Per Regione: [REGIONE]
+Per Settore: [SETTORE]
+
+**TABELLA_3** – Normativa specifica del profilo
+Ambiti: trasparenza - anticorruzione - privacy
+
+**TABELLA_4** – Competenze tecnico-specialistiche
+Competenze tecniche distintive del profilo [PROFILO]
+
+**TABELLA_5** – Competenze gestionali e procedurali
+Gestione processi - procedure - workflow
+
+**TABELLA_6** – Competenze trasversali
+Consapevolezza del contesto - Soluzione problemi - Consapevolezza digitale - Comunicazione - Collaborazione - Orientamento al servizio - Gestione emozioni - Affidabilità - Accuratezza - Iniziativa - Orientamento al risultato - Gestione processi - Guida del gruppo - Sviluppo collaboratori - Ottimizzazione risorse
+
+**TABELLA_7** – Competenze informatiche
+Software - sistemi - strumenti digitali
+
+**TABELLA_8** – Competenze linguistiche
+Lingue straniere e livello richiesto
+
+# CHECKLIST FINALE
+✓ Intestazione CSV presente
+✓ Tutte e 8 tabelle presenti con dati
+✓ 8 colonne per ogni riga (inclusa colonna Tabella)
+✓ Norme nel formato [Tipo N°/Anno – Titolo]
+✓ Fallback "Nessun riferimento normativo specifico" dove necessario
+✓ Separatore punto e virgola (;)
+✓ Nessun testo aggiuntivo - solo CSV puro
+✓ Nessun blocco markdown (no \`\`\`)
+✓ Prima riga è l'intestazione
+✓ Ogni competenza è una riga separata`;
+
+            document.getElementById('prompt').value = diagnosiPrompt;
+            alert('Prompt Diagnosi Organizzativa caricato! Ricorda di sostituire i placeholder [AREA], [PROFILO], [SETTORE], [REGIONE], [DECLARATORIA] con i riferimenti alle colonne del tuo Excel.');
+        }
 
         async function handleFileUpload(event) {
             const file = event.target.files[0];
@@ -664,37 +819,88 @@
                 document.getElementById('progressTime').textContent = `${elapsed}s`;
             }, 1000);
 
-            document.getElementById('progressText').textContent = `Elaborazione ${excelData.length} righe...`;
+            const totalRows = excelData.length;
+            const results = [];
+            let successCount = 0;
+            let errorCount = 0;
+            const totalUsage = { inputTokens: 0, outputTokens: 0 };
 
             try {
-                const response = await fetch('/api/execute-batch', {
-                    method: 'POST',
-                    headers: getAuthHeaders(),
-                    body: JSON.stringify({ prompt, excelData, model })
-                });
+                // Process each row individually
+                for (let i = 0; i < totalRows; i++) {
+                    const rowData = excelData[i];
 
-                clearInterval(timerInterval);
-                const data = await response.json();
+                    // Update progress UI
+                    const progressPercent = ((i + 1) / totalRows) * 100;
+                    document.getElementById('progressFill').style.width = `${progressPercent}%`;
+                    document.getElementById('progressText').textContent = `Riga ${i + 1} di ${totalRows}...`;
 
-                if (!response.ok) {
-                    if (response.status === 401 || response.status === 403) {
-                        localStorage.removeItem('authToken');
-                        window.location.href = '/login.html';
-                        return;
+                    try {
+                        // Call API for single row
+                        const response = await fetch('/api/execute', {
+                            method: 'POST',
+                            headers: getAuthHeaders(),
+                            body: JSON.stringify({ prompt, rowData, rowIndex: i, model })
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            if (response.status === 401 || response.status === 403) {
+                                localStorage.removeItem('authToken');
+                                window.location.href = '/login.html';
+                                return;
+                            }
+                            throw new Error(data.error || 'Request failed');
+                        }
+
+                        // Store result
+                        results.push(data);
+
+                        if (data.success) {
+                            successCount++;
+                            totalUsage.inputTokens += data.usage.inputTokens;
+                            totalUsage.outputTokens += data.usage.outputTokens;
+                        } else {
+                            errorCount++;
+                        }
+
+                    } catch (error) {
+                        console.error(`Error processing row ${i + 1}:`, error);
+                        errorCount++;
+                        results.push({
+                            rowIndex: i,
+                            rowData: rowData,
+                            success: false,
+                            error: error.message,
+                            processedPrompt: '',
+                            response: '',
+                            usage: { inputTokens: 0, outputTokens: 0 }
+                        });
                     }
-                    throw new Error(data.error || 'Request failed');
                 }
 
-                batchResults = data.results;
+                // Store results for download
+                batchResults = results;
 
-                // Display results
-                displayResults(data);
+                // Display final results
+                const finalData = {
+                    results: results,
+                    successCount: successCount,
+                    errorCount: errorCount,
+                    totalUsage: totalUsage
+                };
+                displayResults(finalData);
+
+                // Update total time stat
+                const finalTime = Math.floor((Date.now() - startTime) / 1000);
+                document.getElementById('totalTime').textContent = `${finalTime}s`;
 
             } catch (error) {
                 console.error('Error:', error);
-                clearInterval(timerInterval);
                 alert('Errore nell\'esecuzione: ' + error.message);
             } finally {
+                clearInterval(timerInterval);
                 document.getElementById('loading').classList.remove('active');
                 document.getElementById('progressContainer').classList.remove('active');
                 document.getElementById('executeBtn').disabled = false;
