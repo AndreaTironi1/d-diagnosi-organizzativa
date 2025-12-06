@@ -315,9 +315,10 @@ app.post('/api/execute-batch', authenticateToken, async (req, res) => {
 function createExcelFromResult(result, rowIndex) {
   const workbook = xlsx.utils.book_new();
 
-  // Try to parse JSON from Claude response
+  // Try to parse JSON or CSV from Claude response
   let parsedData = null;
   let jsonFound = false;
+  let csvFound = false;
 
   console.log(`\n=== Processing Excel for row ${rowIndex} ===`);
   console.log(`Response length: ${result.response ? result.response.length : 0} characters`);
@@ -327,11 +328,75 @@ function createExcelFromResult(result, rowIndex) {
     console.log(`First 200 chars: ${response.substring(0, 200)}`);
 
     try {
-      // Try multiple JSON extraction strategies
+      // FIRST: Try CSV parsing (new approach)
+      // Look for CSV with semicolon separator and header
+      if (response.includes(';') && response.includes('Tabella;Area_Contrattuale')) {
+        console.log('🔍 Detected CSV format with semicolon separator');
+        try {
+          // Extract CSV (remove any markdown code blocks)
+          let csvContent = response;
+          const csvBlockMatch = response.match(/```(?:csv)?\s*([\s\S]*?)\s*```/i);
+          if (csvBlockMatch) {
+            csvContent = csvBlockMatch[1].trim();
+            console.log('Extracted CSV from code block');
+          }
 
-      // Strategy 1: Look for ```json code blocks (case-insensitive, flexible whitespace)
-      const jsonBlockMatch = response.match(/```\s*json\s*([\s\S]*?)\s*```/i);
-      if (jsonBlockMatch) {
+          // Parse CSV into array of objects
+          const lines = csvContent.split('\n').map(line => line.trim()).filter(line => line);
+          if (lines.length > 1) {
+            const headers = lines[0].split(';').map(h => h.trim());
+            console.log(`CSV headers: ${headers.join(', ')}`);
+
+            const csvData = [];
+            for (let i = 1; i < lines.length; i++) {
+              const values = lines[i].split(';').map(v => v.trim().replace(/^"|"$/g, ''));
+              if (values.length === headers.length) {
+                const obj = {};
+                headers.forEach((header, index) => {
+                  obj[header] = values[index];
+                });
+                csvData.push(obj);
+              }
+            }
+
+            if (csvData.length > 0) {
+              // Group CSV data by table
+              const groupedByTable = {};
+              csvData.forEach(row => {
+                const tableName = row.Tabella || row.tabella || 'UNKNOWN';
+                if (!groupedByTable[tableName]) {
+                  groupedByTable[tableName] = [];
+                }
+                groupedByTable[tableName].push(row);
+              });
+
+              // Convert to PA competenze format
+              parsedData = {
+                tabella_1_normativa_generale: groupedByTable['TABELLA_1'] || [],
+                tabella_2_normativa_nazionale_regionale: groupedByTable['TABELLA_2'] || [],
+                tabella_3_normativa_specifica_profilo: groupedByTable['TABELLA_3'] || [],
+                tabella_4_competenze_tecnico_specialistiche: groupedByTable['TABELLA_4'] || [],
+                tabella_5_competenze_gestionali_procedurali: groupedByTable['TABELLA_5'] || [],
+                tabella_6_competenze_trasversali: groupedByTable['TABELLA_6'] || [],
+                tabella_7_competenze_informatiche: groupedByTable['TABELLA_7'] || [],
+                tabella_8_competenze_linguistiche: groupedByTable['TABELLA_8'] || []
+              };
+
+              csvFound = true;
+              console.log(`✅ Successfully parsed CSV: ${csvData.length} total rows`);
+              console.log(`📊 Tables found: ${Object.keys(groupedByTable).join(', ')}`);
+            }
+          }
+        } catch (e) {
+          console.log('Failed to parse CSV:', e.message);
+        }
+      }
+
+      // FALLBACK: Try multiple JSON extraction strategies (if CSV not found)
+      if (!csvFound) {
+        // Strategy 1: Look for ```json code blocks (case-insensitive, flexible whitespace)
+        const jsonBlockMatch = response.match(/```\s*json\s*([\s\S]*?)\s*```/i);
+        if (jsonBlockMatch) {
         console.log('Found JSON in code block (```json)');
         try {
           parsedData = JSON.parse(jsonBlockMatch[1].trim());
@@ -387,14 +452,18 @@ function createExcelFromResult(result, rowIndex) {
         }
       }
 
+      } // End of if (!csvFound) for JSON parsing
+
       // Log what we found
-      if (jsonFound && parsedData) {
+      if (csvFound) {
+        console.log('✅ CSV parsing successful');
+      } else if (jsonFound && parsedData) {
         console.log('📊 Parsed data type:', Array.isArray(parsedData) ? `Array[${parsedData.length}]` : typeof parsedData);
         if (typeof parsedData === 'object' && !Array.isArray(parsedData)) {
           console.log('📊 Object keys:', Object.keys(parsedData).join(', '));
         }
       } else {
-        console.log('⚠️ No JSON found in response');
+        console.log('⚠️ No CSV or JSON found in response');
       }
 
     } catch (e) {
@@ -451,6 +520,8 @@ function createExcelFromResult(result, rowIndex) {
     const debugData = [{
       'Row Index': rowIndex + 1,
       'Response Length': result.response.length,
+      'Format Detected': csvFound ? 'CSV' : (jsonFound ? 'JSON' : 'Unknown'),
+      'CSV Found': csvFound ? 'YES' : 'NO',
       'JSON Found': jsonFound ? 'YES' : 'NO',
       'Parsed Type': parsedData ? (Array.isArray(parsedData) ? `Array[${parsedData.length}]` : typeof parsedData) : 'null',
       'First 500 chars': result.response.substring(0, 500),

@@ -1,0 +1,111 @@
+ANALISI COMPETENZE PER RUOLI DELLA PUBBLICA AMMINISTRAZIONE
+
+# CONTESTO
+Sei un esperto in organizzazione del lavoro pubblico, con profonda conoscenza di:
+- CCNL Funzioni Locali e normativa PA (D.Lgs. 165/2001, 267/2000)
+- Sistemi di competenze per PA, PIAO, DUP, PEG
+- Normative settoriali e regionali
+
+# DATI DEL PROFILO
+- Area Contrattuale: [AREA]
+- Declaratoria CCNL: [DECLARATORIA]
+- Profilo professionale: [PROFILO]
+- Settore operativo: [SETTORE]
+- Regione: [REGIONE]
+
+# REGOLE FONDAMENTALI
+1. NON inventare norme o articoli inesistenti
+2. Usa SOLO riferimenti normativi verificabili e reali
+3. Formato norme: [Tipo] [N°]/[Anno] – [Titolo completo]
+   Esempio: D.Lgs. 267/2000 – Testo Unico Enti Locali
+4. Se non esiste norma applicabile: "Nessun riferimento normativo specifico"
+5. Per normative regionali: cita SOLO atti realmente esistenti della [REGIONE]
+
+# TABELLE RICHIESTE (8 obbligatorie)
+
+**Tabella 1** – Normativa generale enti locali
+Ambiti: ordinamento, procedimento, contratti pubblici, trasparenza, anticorruzione, privacy
+
+**Tabella 2** – Normativa nazionale e regionale specifica
+Per Regione [REGIONE] e Settore [SETTORE]
+
+**Tabella 3** – Normativa specifica del profilo
+Focus: trasparenza, anticorruzione, privacy per il profilo [PROFILO]
+
+**Tabella 4** – Competenze tecnico-specialistiche
+Competenze tecniche distintive del profilo
+
+**Tabella 5** – Competenze gestionali e procedurali
+Gestione processi, procedure, workflow
+
+**Tabella 6** – Competenze trasversali
+Da elenco: problem solving, comunicazione, collaborazione, orientamento servizio, leadership, etc.
+
+**Tabella 7** – Competenze informatiche
+Software, sistemi, strumenti digitali
+
+**Tabella 8** – Competenze linguistiche
+Lingue straniere e livello richiesto
+
+# STRUTTURA COLONNE (identica per tutte le 8 tabelle)
+1. Area_Contrattuale
+2. Profilo
+3. Competenza_Conoscenza
+4. Descrizione_Operativa
+5. Riferimenti_Normativi
+6. Peso_1_10
+7. Livello_Richiesto_1_10
+
+# FORMATO OUTPUT
+
+Restituisci **ESCLUSIVAMENTE** questo JSON, senza testo introduttivo o conclusivo:
+
+```json
+{
+  "tabella_1_normativa_generale": [
+    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_10": 0}
+  ],
+  "tabella_2_normativa_nazionale_regionale": [
+    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_10": 0}
+  ],
+  "tabella_3_normativa_specifica_profilo": [
+    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_10": 0}
+  ],
+  "tabella_4_competenze_tecnico_specialistiche": [
+    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_10": 0}
+  ],
+  "tabella_5_competenze_gestionali_procedurali": [
+    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_10": 0}
+  ],
+  "tabella_6_competenze_trasversali": [
+    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_10": 0}
+  ],
+  "tabella_7_competenze_informatiche": [
+    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_10": 0}
+  ],
+  "tabella_8_competenze_linguistiche": [
+    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_10": 0}
+  ],
+  "sintesi_esecutiva": {
+    "testo": "Massimo 150 parole di sintesi esecutiva",
+    "top_3_competenze_critiche": ["competenza1", "competenza2", "competenza3"],
+    "priorita_formative": ["priorità1", "priorità2"],
+    "gap_tipici": ["gap1", "gap2"],
+    "normative_regionali": "Eventuali norme regionali specifiche"
+  },
+  "raccomandazioni_operative": {
+    "percorsi_formativi": ["percorso1", "percorso2"],
+    "certificazioni_utili": ["cert1", "cert2"],
+    "modalita_verifica": ["metodo1", "metodo2"]
+  }
+}
+```
+
+# CHECKLIST FINALE
+✓ Tutte e 8 tabelle presenti con dati
+✓ 7 colonne per ogni tabella
+✓ Norme nel formato [Tipo N°/Anno – Titolo]
+✓ Fallback "Nessun riferimento normativo specifico" dove necessario
+✓ Sintesi < 150 parole
+✓ Raccomandazioni concrete e operative
+✓ JSON valido senza testo aggiuntivo
