@@ -57,7 +57,7 @@ Lingue straniere e livello richiesto
 5. Descrizione_Operativa
 6. Riferimenti_Normativi
 7. Peso_1_10
-8. Livello_Richiesto_1_10
+8. Livello_Richiesto_1_7
 
 # FORMATO OUTPUT CSV
 
@@ -67,8 +67,8 @@ NON usare blocchi di codice con ```.
 Restituisci SOLO il CSV puro.
 
 ESEMPIO FORMATO:
-Tabella;Area_Contrattuale;Profilo;Competenza_Conoscenza;Descrizione_Operativa;Riferimenti_Normativi;Peso_1_10;Livello_Richiesto_1_10
-TABELLA_1;Dirigente;Dirigente Tecnico;Ordinamento enti locali;Conoscenza approfondita della struttura e organizzazione degli enti locali;D.Lgs. 267/2000 – Testo Unico Enti Locali;9;8
+Tabella;Area_Contrattuale;Profilo;Competenza_Conoscenza;Descrizione_Operativa;Riferimenti_Normativi;Peso_1_10;Livello_Richiesto_1_7
+TABELLA_1;Dirigente;Dirigente Tecnico;Ordinamento enti locali;Conoscenza approfondita della struttura e organizzazione degli enti locali;D.Lgs. 267/2000 – Testo Unico Enti Locali;9;7
 
 # REGOLE DI FORMATTAZIONE CSV
 1. Usa SEMPRE il punto e virgola (;) come separatore

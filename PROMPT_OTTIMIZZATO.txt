@@ -54,7 +54,7 @@ Lingue straniere e livello richiesto
 4. Descrizione_Operativa
 5. Riferimenti_Normativi
 6. Peso_1_10
-7. Livello_Richiesto_1_10
+7. Livello_Richiesto_1_7
 
 # FORMATO OUTPUT
 
@@ -63,28 +63,28 @@ Restituisci **ESCLUSIVAMENTE** questo JSON, senza testo introduttivo o conclusiv
 ```json
 {
   "tabella_1_normativa_generale": [
-    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_10": 0}
+    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_7": 0}
   ],
   "tabella_2_normativa_nazionale_regionale": [
-    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_10": 0}
+    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_7": 0}
   ],
   "tabella_3_normativa_specifica_profilo": [
-    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_10": 0}
+    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_7": 0}
   ],
   "tabella_4_competenze_tecnico_specialistiche": [
-    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_10": 0}
+    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_7": 0}
   ],
   "tabella_5_competenze_gestionali_procedurali": [
-    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_10": 0}
+    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_7": 0}
   ],
   "tabella_6_competenze_trasversali": [
-    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_10": 0}
+    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_7": 0}
   ],
   "tabella_7_competenze_informatiche": [
-    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_10": 0}
+    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_7": 0}
   ],
   "tabella_8_competenze_linguistiche": [
-    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_10": 0}
+    {"Area_Contrattuale": "", "Profilo": "", "Competenza_Conoscenza": "", "Descrizione_Operativa": "", "Riferimenti_Normativi": "", "Peso_1_10": 0, "Livello_Richiesto_1_7": 0}
   ],
   "sintesi_esecutiva": {
     "testo": "Massimo 150 parole di sintesi esecutiva",
