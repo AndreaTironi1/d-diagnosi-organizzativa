@@ -522,6 +522,21 @@ function createExcelFromResult(result, rowIndex) {
       }
     }
 
+    // Create TUTTELETABELLE sheet with all rows combined
+    const tutteLeRighe = [];
+    for (const [sheetName, tableData] of Object.entries(tables)) {
+      if (tableData && Array.isArray(tableData) && tableData.length > 0) {
+        tutteLeRighe.push(...tableData);
+      }
+    }
+
+    if (tutteLeRighe.length > 0) {
+      console.log(`Creating TUTTELETABELLE sheet with ${tutteLeRighe.length} total rows`);
+      const tutteSheet = xlsx.utils.json_to_sheet(tutteLeRighe);
+      xlsx.utils.book_append_sheet(workbook, tutteSheet, 'TUTTELETABELLE');
+      console.log('✅ TUTTELETABELLE sheet created successfully');
+    }
+
     // Add summary sheets
     if (parsedData.sintesi_esecutiva) {
       const sintesiData = [{
