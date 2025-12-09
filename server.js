@@ -141,7 +141,7 @@ app.post('/api/execute', authenticateToken, async (req, res) => {
     // Call Claude API
     const message = await anthropic.messages.create({
       model: selectedModel,
-      max_tokens: 5000,
+      max_tokens: 8192,
       messages: [
         {
           role: 'user',
@@ -285,7 +285,7 @@ app.post('/api/execute-batch', authenticateToken, async (req, res) => {
         // Call Claude API
         const message = await anthropic.messages.create({
           model: selectedModel,
-          max_tokens: 5000,
+          max_tokens: 8192,
           messages: [
             {
               role: 'user',
@@ -410,14 +410,14 @@ function createExcelFromResult(result, rowIndex) {
 
                 // Convert to PA competenze format
                 parsedData = {
-                  tabella_1_normativa_generale: groupedByTable['TABELLA_1'] || [],
-                  tabella_2_normativa_nazionale_regionale: groupedByTable['TABELLA_2'] || [],
-                  tabella_3_normativa_specifica_profilo: groupedByTable['TABELLA_3'] || [],
-                  tabella_4_competenze_tecnico_specialistiche: groupedByTable['TABELLA_4'] || [],
-                  tabella_5_competenze_gestionali_procedurali: groupedByTable['TABELLA_5'] || [],
-                  tabella_6_competenze_trasversali: groupedByTable['TABELLA_6'] || [],
-                  tabella_7_competenze_informatiche: groupedByTable['TABELLA_7'] || [],
-                  tabella_8_competenze_linguistiche: groupedByTable['TABELLA_8'] || []
+                  tabella_1_normativa_generale: groupedByTable['T1'] || [],
+                  tabella_2_normativa_nazionale_regionale: groupedByTable['T2'] || [],
+                  tabella_3_normativa_specifica_profilo: groupedByTable['T3'] || [],
+                  tabella_4_competenze_tecnico_specialistiche: groupedByTable['T4'] || [],
+                  tabella_5_competenze_gestionali_procedurali: groupedByTable['T5'] || [],
+                  tabella_6_competenze_trasversali: groupedByTable['T6'] || [],
+                  tabella_7_competenze_informatiche: groupedByTable['T7'] || [],
+                  tabella_8_competenze_linguistiche: groupedByTable['T8'] || []
                 };
 
                 csvFound = true;
@@ -510,14 +510,14 @@ function createExcelFromResult(result, rowIndex) {
     }
   }
 
-  // If we have PA competenze format, create only TUTTELETABELLE sheet
+  // If we have PA competenze format, create only RISULTATI sheet
   if (parsedData && (parsedData.competenze_flat || parsedData.tabella_1_normativa_generale)) {
     // New optimized flat format - data already combined
     if (parsedData.competenze_flat && Array.isArray(parsedData.competenze_flat)) {
-      console.log(`Creating TUTTELETABELLE sheet with ${parsedData.competenze_flat.length} rows (optimized flat format)`);
+      console.log(`Creating RISULTATI sheet with ${parsedData.competenze_flat.length} rows (optimized flat format)`);
       const tutteSheet = xlsx.utils.json_to_sheet(parsedData.competenze_flat);
-      xlsx.utils.book_append_sheet(workbook, tutteSheet, 'TUTTELETABELLE');
-      console.log('✅ TUTTELETABELLE sheet created successfully');
+      xlsx.utils.book_append_sheet(workbook, tutteSheet, 'RISULTATI');
+      console.log('✅ RISULTATI sheet created successfully');
     } else {
       // Old format with 8 separate tables - combine them
       const tables = {
@@ -539,10 +539,10 @@ function createExcelFromResult(result, rowIndex) {
       }
 
       if (tutteLeRighe.length > 0) {
-        console.log(`Creating TUTTELETABELLE sheet with ${tutteLeRighe.length} total rows`);
+        console.log(`Creating RISULTATI sheet with ${tutteLeRighe.length} total rows`);
         const tutteSheet = xlsx.utils.json_to_sheet(tutteLeRighe);
-        xlsx.utils.book_append_sheet(workbook, tutteSheet, 'TUTTELETABELLE');
-        console.log('✅ TUTTELETABELLE sheet created successfully');
+        xlsx.utils.book_append_sheet(workbook, tutteSheet, 'RISULTATI');
+        console.log('✅ RISULTATI sheet created successfully');
       }
     }
   }
@@ -743,12 +743,12 @@ app.post('/api/download-excel', authenticateToken, (req, res) => {
     function processStructuredData(workbook, data, sourceRow) {
       // Check if this is the PA competenze format (optimized or old)
       if (data.competenze_flat || data.tabella_1_normativa_generale) {
-        // New optimized flat format - create only TUTTELETABELLE
+        // New optimized flat format - create only RISULTATI
         if (data.competenze_flat && Array.isArray(data.competenze_flat)) {
           const sheet = xlsx.utils.json_to_sheet(data.competenze_flat);
-          xlsx.utils.book_append_sheet(workbook, sheet, 'TUTTELETABELLE');
+          xlsx.utils.book_append_sheet(workbook, sheet, 'RISULTATI');
         } else {
-          // Old format - combine all tables into TUTTELETABELLE
+          // Old format - combine all tables into RISULTATI
           const tables = {
             'Normativa Generale': data.tabella_1_normativa_generale,
             'Normativa Naz-Reg': data.tabella_2_normativa_nazionale_regionale,
@@ -769,7 +769,7 @@ app.post('/api/download-excel', authenticateToken, (req, res) => {
 
           if (tutteLeRighe.length > 0) {
             const sheet = xlsx.utils.json_to_sheet(tutteLeRighe);
-            xlsx.utils.book_append_sheet(workbook, sheet, 'TUTTELETABELLE');
+            xlsx.utils.book_append_sheet(workbook, sheet, 'RISULTATI');
           }
         }
       } else if (Array.isArray(data)) {

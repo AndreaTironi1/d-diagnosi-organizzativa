@@ -25,28 +25,28 @@ Sei un esperto in organizzazione del lavoro pubblico, con profonda conoscenza di
 
 # TABELLE RICHIESTE (8 obbligatorie)
 
-**TABELLA_1** – Normativa generale enti locali
+**T1** – Normativa generale enti locali
 Ambiti: ordinamento, procedimento, contratti pubblici, trasparenza, anticorruzione, privacy
 
-**TABELLA_2** – Normativa nazionale e regionale specifica
+**T2** – Normativa nazionale e regionale specifica
 Per Regione [REGIONE] e Settore [SETTORE]
 
-**TABELLA_3** – Normativa specifica del profilo
+**T3** – Normativa specifica del profilo
 Focus: trasparenza, anticorruzione, privacy per il profilo [PROFILO]
 
-**TABELLA_4** – Competenze tecnico-specialistiche
+**T4** – Competenze tecnico-specialistiche
 Competenze tecniche distintive del profilo
 
-**TABELLA_5** – Competenze gestionali e procedurali
+**T5** – Competenze gestionali e procedurali
 Gestione processi, procedure, workflow
 
-**TABELLA_6** – Competenze trasversali
+**T6** – Competenze trasversali
 Da elenco: problem solving, comunicazione, collaborazione, orientamento servizio, leadership, etc.
 
-**TABELLA_7** – Competenze informatiche
+**T7** – Competenze informatiche
 Software, sistemi, strumenti digitali
 
-**TABELLA_8** – Competenze linguistiche
+**T8** – Competenze linguistiche
 Lingue straniere e livello richiesto
 
 # STRUTTURA COLONNE (identica per tutte le 8 tabelle)
@@ -66,16 +66,16 @@ Inizia direttamente con l'intestazione e i dati.
 
 ```
 Nome_Tabella;Area_Contrattuale;Profilo;Competenza_Conoscenza;Descrizione_Operativa;Riferimenti_Normativi;Peso_1_10;Livello_Richiesto_1_7
-TABELLA_1;[area];[profilo];[competenza];[descrizione];[norme];9;7
-TABELLA_1;[area];[profilo];[competenza];[descrizione];[norme];8;6
-TABELLA_2;[area];[profilo];[competenza];[descrizione];[norme];7;5
-TABELLA_2;[area];[profilo];[competenza];[descrizione];[norme];8;6
-TABELLA_3;[area];[profilo];[competenza];[descrizione];[norme];9;7
-TABELLA_4;[area];[profilo];[competenza];[descrizione];[norme];8;6
-TABELLA_5;[area];[profilo];[competenza];[descrizione];[norme];7;5
-TABELLA_6;[area];[profilo];[competenza];[descrizione];[norme];6;4
-TABELLA_7;[area];[profilo];[competenza];[descrizione];[norme];5;4
-TABELLA_8;[area];[profilo];[competenza];[descrizione];[norme];4;3
+T1;[area];[profilo];[competenza];[descrizione];[norme];9;7
+T1;[area];[profilo];[competenza];[descrizione];[norme];8;6
+T2;[area];[profilo];[competenza];[descrizione];[norme];7;5
+T2;[area];[profilo];[competenza];[descrizione];[norme];8;6
+T3;[area];[profilo];[competenza];[descrizione];[norme];9;7
+T4;[area];[profilo];[competenza];[descrizione];[norme];8;6
+T5;[area];[profilo];[competenza];[descrizione];[norme];7;5
+T6;[area];[profilo];[competenza];[descrizione];[norme];6;4
+T7;[area];[profilo];[competenza];[descrizione];[norme];5;4
+T8;[area];[profilo];[competenza];[descrizione];[norme];4;3
 ```
 
 # REGOLE DI FORMATTAZIONE CSV
@@ -89,29 +89,29 @@ TABELLA_8;[area];[profilo];[competenza];[descrizione];[norme];4;3
 
 # CONTENUTO TABELLE
 
-**TABELLA_1** – Normativa generale enti locali
+**T1** – Normativa generale enti locali
 Ambiti: ordinamento enti locali - procedimento amministrativo - contratti pubblici - diritto amministrativo - documentazione - diritti e doveri - trasparenza - anticorruzione - privacy
 
-**TABELLA_2** – Normativa nazionale e regionale
+**T2** – Normativa nazionale e regionale
 Per Regione: [REGIONE]
 Per Settore: [SETTORE]
 
-**TABELLA_3** – Normativa specifica del profilo
+**T3** – Normativa specifica del profilo
 Ambiti: trasparenza - anticorruzione - privacy
 
-**TABELLA_4** – Competenze tecnico-specialistiche
+**T4** – Competenze tecnico-specialistiche
 Competenze tecniche distintive del profilo [PROFILO]
 
-**TABELLA_5** – Competenze gestionali e procedurali
+**T5** – Competenze gestionali e procedurali
 Gestione processi - procedure - workflow
 
-**TABELLA_6** – Competenze trasversali
+**T6** – Competenze trasversali
 Consapevolezza del contesto - Soluzione problemi - Consapevolezza digitale - Comunicazione - Collaborazione - Orientamento al servizio - Gestione emozioni - Affidabilità - Accuratezza - Iniziativa - Orientamento al risultato - Gestione processi - Guida del gruppo - Sviluppo collaboratori - Ottimizzazione risorse
 
-**TABELLA_7** – Competenze informatiche
+**T7** – Competenze informatiche
 Software - sistemi - strumenti digitali
 
-**TABELLA_8** – Competenze linguistiche
+**T8** – Competenze linguistiche
 Lingue straniere e livello richiesto
 
 # CHECKLIST FINALE
