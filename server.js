@@ -141,7 +141,7 @@ app.post('/api/execute', authenticateToken, async (req, res) => {
     // Call Claude API
     const message = await anthropic.messages.create({
       model: selectedModel,
-      max_tokens: 8192,
+      max_tokens: 5000,
       messages: [
         {
           role: 'user',
@@ -285,7 +285,7 @@ app.post('/api/execute-batch', authenticateToken, async (req, res) => {
         // Call Claude API
         const message = await anthropic.messages.create({
           model: selectedModel,
-          max_tokens: 8192,
+          max_tokens: 5000,
           messages: [
             {
               role: 'user',
@@ -360,8 +360,8 @@ function createExcelFromResult(result, rowIndex) {
 
     try {
       // FIRST: Try CSV parsing (new approach)
-      // Look for CSV with semicolon separator and header
-      if (response.includes(';') && response.includes('Tabella;Area_Contrattuale')) {
+      // Look for CSV with semicolon separator and header (optimized format with Nome_Tabella)
+      if (response.includes(';') && (response.includes('Nome_Tabella;Area_Contrattuale') || response.includes('Tabella;Area_Contrattuale'))) {
         console.log('🔍 Detected CSV format with semicolon separator');
         try {
           // Extract CSV (remove any markdown code blocks)
@@ -391,31 +391,39 @@ function createExcelFromResult(result, rowIndex) {
             }
 
             if (csvData.length > 0) {
-              // Group CSV data by table
-              const groupedByTable = {};
-              csvData.forEach(row => {
-                const tableName = row.Tabella || row.tabella || 'UNKNOWN';
-                if (!groupedByTable[tableName]) {
-                  groupedByTable[tableName] = [];
-                }
-                groupedByTable[tableName].push(row);
-              });
+              // Check if this is the new flat format with Nome_Tabella column
+              if (csvData[0].Nome_Tabella) {
+                // New optimized format - use data directly as flat array
+                console.log(`✅ Detected optimized flat CSV format with ${csvData.length} rows`);
+                parsedData = { competenze_flat: csvData };
+                csvFound = true;
+              } else {
+                // Old format - group by Tabella column
+                const groupedByTable = {};
+                csvData.forEach(row => {
+                  const tableName = row.Tabella || row.tabella || 'UNKNOWN';
+                  if (!groupedByTable[tableName]) {
+                    groupedByTable[tableName] = [];
+                  }
+                  groupedByTable[tableName].push(row);
+                });
 
-              // Convert to PA competenze format
-              parsedData = {
-                tabella_1_normativa_generale: groupedByTable['TABELLA_1'] || [],
-                tabella_2_normativa_nazionale_regionale: groupedByTable['TABELLA_2'] || [],
-                tabella_3_normativa_specifica_profilo: groupedByTable['TABELLA_3'] || [],
-                tabella_4_competenze_tecnico_specialistiche: groupedByTable['TABELLA_4'] || [],
-                tabella_5_competenze_gestionali_procedurali: groupedByTable['TABELLA_5'] || [],
-                tabella_6_competenze_trasversali: groupedByTable['TABELLA_6'] || [],
-                tabella_7_competenze_informatiche: groupedByTable['TABELLA_7'] || [],
-                tabella_8_competenze_linguistiche: groupedByTable['TABELLA_8'] || []
-              };
+                // Convert to PA competenze format
+                parsedData = {
+                  tabella_1_normativa_generale: groupedByTable['TABELLA_1'] || [],
+                  tabella_2_normativa_nazionale_regionale: groupedByTable['TABELLA_2'] || [],
+                  tabella_3_normativa_specifica_profilo: groupedByTable['TABELLA_3'] || [],
+                  tabella_4_competenze_tecnico_specialistiche: groupedByTable['TABELLA_4'] || [],
+                  tabella_5_competenze_gestionali_procedurali: groupedByTable['TABELLA_5'] || [],
+                  tabella_6_competenze_trasversali: groupedByTable['TABELLA_6'] || [],
+                  tabella_7_competenze_informatiche: groupedByTable['TABELLA_7'] || [],
+                  tabella_8_competenze_linguistiche: groupedByTable['TABELLA_8'] || []
+                };
 
-              csvFound = true;
-              console.log(`✅ Successfully parsed CSV: ${csvData.length} total rows`);
-              console.log(`📊 Tables found: ${Object.keys(groupedByTable).join(', ')}`);
+                csvFound = true;
+                console.log(`✅ Successfully parsed CSV: ${csvData.length} total rows`);
+                console.log(`📊 Tables found: ${Object.keys(groupedByTable).join(', ')}`);
+              }
             }
           }
         } catch (e) {
@@ -502,80 +510,43 @@ function createExcelFromResult(result, rowIndex) {
     }
   }
 
-  // If we have PA competenze format, create sheets
-  if (parsedData && parsedData.tabella_1_normativa_generale) {
-    const tables = {
-      'Normativa Generale': parsedData.tabella_1_normativa_generale,
-      'Normativa Naz-Reg': parsedData.tabella_2_normativa_nazionale_regionale,
-      'Normativa Specifica': parsedData.tabella_3_normativa_specifica_profilo,
-      'Competenze Tecnico-Spec': parsedData.tabella_4_competenze_tecnico_specialistiche,
-      'Competenze Gestionali': parsedData.tabella_5_competenze_gestionali_procedurali,
-      'Competenze Trasversali': parsedData.tabella_6_competenze_trasversali,
-      'Competenze Informatiche': parsedData.tabella_7_competenze_informatiche,
-      'Competenze Linguistiche': parsedData.tabella_8_competenze_linguistiche
-    };
-
-    for (const [sheetName, tableData] of Object.entries(tables)) {
-      if (tableData && Array.isArray(tableData) && tableData.length > 0) {
-        const sheet = xlsx.utils.json_to_sheet(tableData);
-        xlsx.utils.book_append_sheet(workbook, sheet, sheetName);
-      }
-    }
-
-    // Create TUTTELETABELLE sheet with all rows combined
-    const tutteLeRighe = [];
-    for (const [sheetName, tableData] of Object.entries(tables)) {
-      if (tableData && Array.isArray(tableData) && tableData.length > 0) {
-        tutteLeRighe.push(...tableData);
-      }
-    }
-
-    if (tutteLeRighe.length > 0) {
-      console.log(`Creating TUTTELETABELLE sheet with ${tutteLeRighe.length} total rows`);
-      const tutteSheet = xlsx.utils.json_to_sheet(tutteLeRighe);
+  // If we have PA competenze format, create only TUTTELETABELLE sheet
+  if (parsedData && (parsedData.competenze_flat || parsedData.tabella_1_normativa_generale)) {
+    // New optimized flat format - data already combined
+    if (parsedData.competenze_flat && Array.isArray(parsedData.competenze_flat)) {
+      console.log(`Creating TUTTELETABELLE sheet with ${parsedData.competenze_flat.length} rows (optimized flat format)`);
+      const tutteSheet = xlsx.utils.json_to_sheet(parsedData.competenze_flat);
       xlsx.utils.book_append_sheet(workbook, tutteSheet, 'TUTTELETABELLE');
       console.log('✅ TUTTELETABELLE sheet created successfully');
-    }
+    } else {
+      // Old format with 8 separate tables - combine them
+      const tables = {
+        'Normativa Generale': parsedData.tabella_1_normativa_generale,
+        'Normativa Naz-Reg': parsedData.tabella_2_normativa_nazionale_regionale,
+        'Normativa Specifica': parsedData.tabella_3_normativa_specifica_profilo,
+        'Competenze Tecnico-Spec': parsedData.tabella_4_competenze_tecnico_specialistiche,
+        'Competenze Gestionali': parsedData.tabella_5_competenze_gestionali_procedurali,
+        'Competenze Trasversali': parsedData.tabella_6_competenze_trasversali,
+        'Competenze Informatiche': parsedData.tabella_7_competenze_informatiche,
+        'Competenze Linguistiche': parsedData.tabella_8_competenze_linguistiche
+      };
 
-    // Add summary sheets
-    if (parsedData.sintesi_esecutiva) {
-      const sintesiData = [{
-        'Testo': parsedData.sintesi_esecutiva.testo || '',
-        'Top 3 Competenze': (parsedData.sintesi_esecutiva.top_3_competenze_critiche || []).join('; '),
-        'Priorità Formative': (parsedData.sintesi_esecutiva.priorita_formative || []).join('; '),
-        'Gap Tipici': (parsedData.sintesi_esecutiva.gap_tipici || []).join('; '),
-        'Normative Regionali': parsedData.sintesi_esecutiva.normative_regionali || ''
-      }];
-      const sintesiSheet = xlsx.utils.json_to_sheet(sintesiData);
-      xlsx.utils.book_append_sheet(workbook, sintesiSheet, 'Sintesi Esecutiva');
-    }
+      const tutteLeRighe = [];
+      for (const [sheetName, tableData] of Object.entries(tables)) {
+        if (tableData && Array.isArray(tableData) && tableData.length > 0) {
+          tutteLeRighe.push(...tableData);
+        }
+      }
 
-    if (parsedData.raccomandazioni_operative) {
-      const raccData = [{
-        'Percorsi Formativi': (parsedData.raccomandazioni_operative.percorsi_formativi || []).join('; '),
-        'Certificazioni Utili': (parsedData.raccomandazioni_operative.certificazioni_utili || []).join('; '),
-        'Modalità di Verifica': (parsedData.raccomandazioni_operative.modalita_verifica || []).join('; ')
-      }];
-      const raccSheet = xlsx.utils.json_to_sheet(raccData);
-      xlsx.utils.book_append_sheet(workbook, raccSheet, 'Raccomandazioni');
+      if (tutteLeRighe.length > 0) {
+        console.log(`Creating TUTTELETABELLE sheet with ${tutteLeRighe.length} total rows`);
+        const tutteSheet = xlsx.utils.json_to_sheet(tutteLeRighe);
+        xlsx.utils.book_append_sheet(workbook, tutteSheet, 'TUTTELETABELLE');
+        console.log('✅ TUTTELETABELLE sheet created successfully');
+      }
     }
   }
 
-  // ALWAYS add a Debug sheet with the raw response for troubleshooting
-  if (result.success && result.response) {
-    const debugData = [{
-      'Row Index': rowIndex + 1,
-      'Response Length': result.response.length,
-      'Format Detected': csvFound ? 'CSV' : (jsonFound ? 'JSON' : 'Unknown'),
-      'CSV Found': csvFound ? 'YES' : 'NO',
-      'JSON Found': jsonFound ? 'YES' : 'NO',
-      'Parsed Type': parsedData ? (Array.isArray(parsedData) ? `Array[${parsedData.length}]` : typeof parsedData) : 'null',
-      'First 500 chars': result.response.substring(0, 500),
-      'Last 500 chars': result.response.substring(Math.max(0, result.response.length - 500))
-    }];
-    const debugSheet = xlsx.utils.json_to_sheet(debugData);
-    xlsx.utils.book_append_sheet(workbook, debugSheet, 'DEBUG');
-  }
 
   if (!parsedData || (!parsedData.tabella_1_normativa_generale && !Array.isArray(parsedData) && typeof parsedData !== 'object')) {
     // Fallback: check if parsedData is an array, if so explode it into rows
@@ -770,48 +741,36 @@ app.post('/api/download-excel', authenticateToken, (req, res) => {
 
     // Helper function to process structured data
     function processStructuredData(workbook, data, sourceRow) {
-      // Check if this is the PA competenze format
-      if (data.tabella_1_normativa_generale) {
-        // Process each table as a separate sheet
-        const tables = {
-          'Normativa Generale': data.tabella_1_normativa_generale,
-          'Normativa Naz-Reg': data.tabella_2_normativa_nazionale_regionale,
-          'Normativa Specifica': data.tabella_3_normativa_specifica_profilo,
-          'Competenze Tecnico-Spec': data.tabella_4_competenze_tecnico_specialistiche,
-          'Competenze Gestionali': data.tabella_5_competenze_gestionali_procedurali,
-          'Competenze Trasversali': data.tabella_6_competenze_trasversali,
-          'Competenze Informatiche': data.tabella_7_competenze_informatiche,
-          'Competenze Linguistiche': data.tabella_8_competenze_linguistiche
-        };
+      // Check if this is the PA competenze format (optimized or old)
+      if (data.competenze_flat || data.tabella_1_normativa_generale) {
+        // New optimized flat format - create only TUTTELETABELLE
+        if (data.competenze_flat && Array.isArray(data.competenze_flat)) {
+          const sheet = xlsx.utils.json_to_sheet(data.competenze_flat);
+          xlsx.utils.book_append_sheet(workbook, sheet, 'TUTTELETABELLE');
+        } else {
+          // Old format - combine all tables into TUTTELETABELLE
+          const tables = {
+            'Normativa Generale': data.tabella_1_normativa_generale,
+            'Normativa Naz-Reg': data.tabella_2_normativa_nazionale_regionale,
+            'Normativa Specifica': data.tabella_3_normativa_specifica_profilo,
+            'Competenze Tecnico-Spec': data.tabella_4_competenze_tecnico_specialistiche,
+            'Competenze Gestionali': data.tabella_5_competenze_gestionali_procedurali,
+            'Competenze Trasversali': data.tabella_6_competenze_trasversali,
+            'Competenze Informatiche': data.tabella_7_competenze_informatiche,
+            'Competenze Linguistiche': data.tabella_8_competenze_linguistiche
+          };
 
-        for (const [sheetName, tableData] of Object.entries(tables)) {
-          if (tableData && Array.isArray(tableData) && tableData.length > 0) {
-            const sheet = xlsx.utils.json_to_sheet(tableData);
-            xlsx.utils.book_append_sheet(workbook, sheet, sheetName);
+          const tutteLeRighe = [];
+          for (const [sheetName, tableData] of Object.entries(tables)) {
+            if (tableData && Array.isArray(tableData) && tableData.length > 0) {
+              tutteLeRighe.push(...tableData);
+            }
           }
-        }
 
-        // Add summary sheets if present
-        if (data.sintesi_esecutiva) {
-          const sintesiData = [{
-            'Testo': data.sintesi_esecutiva.testo || '',
-            'Top 3 Competenze': (data.sintesi_esecutiva.top_3_competenze_critiche || []).join('; '),
-            'Priorità Formative': (data.sintesi_esecutiva.priorita_formative || []).join('; '),
-            'Gap Tipici': (data.sintesi_esecutiva.gap_tipici || []).join('; '),
-            'Normative Regionali': data.sintesi_esecutiva.normative_regionali || ''
-          }];
-          const sintesiSheet = xlsx.utils.json_to_sheet(sintesiData);
-          xlsx.utils.book_append_sheet(workbook, sintesiSheet, 'Sintesi Esecutiva');
-        }
-
-        if (data.raccomandazioni_operative) {
-          const raccData = [{
-            'Percorsi Formativi': (data.raccomandazioni_operative.percorsi_formativi || []).join('; '),
-            'Certificazioni Utili': (data.raccomandazioni_operative.certificazioni_utili || []).join('; '),
-            'Modalità di Verifica': (data.raccomandazioni_operative.modalita_verifica || []).join('; ')
-          }];
-          const raccSheet = xlsx.utils.json_to_sheet(raccData);
-          xlsx.utils.book_append_sheet(workbook, raccSheet, 'Raccomandazioni');
+          if (tutteLeRighe.length > 0) {
+            const sheet = xlsx.utils.json_to_sheet(tutteLeRighe);
+            xlsx.utils.book_append_sheet(workbook, sheet, 'TUTTELETABELLE');
+          }
         }
       } else if (Array.isArray(data)) {
         // Generic array data

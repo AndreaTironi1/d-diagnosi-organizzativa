@@ -50,7 +50,7 @@ Software, sistemi, strumenti digitali
 Lingue straniere e livello richiesto
 
 # STRUTTURA COLONNE (identica per tutte le 8 tabelle)
-1. Tabella
+1. Nome_Tabella
 2. Area_Contrattuale
 3. Profilo
 4. Competenza_Conoscenza
@@ -65,7 +65,7 @@ Restituisci **ESCLUSIVAMENTE** il CSV seguente, senza testo introduttivo, conclu
 Inizia direttamente con l'intestazione e i dati.
 
 ```
-Tabella;Area_Contrattuale;Profilo;Competenza_Conoscenza;Descrizione_Operativa;Riferimenti_Normativi;Peso_1_10;Livello_Richiesto_1_7
+Nome_Tabella;Area_Contrattuale;Profilo;Competenza_Conoscenza;Descrizione_Operativa;Riferimenti_Normativi;Peso_1_10;Livello_Richiesto_1_7
 TABELLA_1;[area];[profilo];[competenza];[descrizione];[norme];9;7
 TABELLA_1;[area];[profilo];[competenza];[descrizione];[norme];8;6
 TABELLA_2;[area];[profilo];[competenza];[descrizione];[norme];7;5
@@ -85,7 +85,7 @@ TABELLA_8;[area];[profilo];[competenza];[descrizione];[norme];4;3
 4. NON usare a capo all'interno dei campi
 5. Ogni riga è una competenza/conoscenza
 6. La prima riga DEVE essere l'intestazione
-7. Tutte le 8 tabelle vanno nello stesso CSV
+7. Tutte le 8 tabelle vanno nello stesso CSV con la colonna Nome_Tabella
 
 # CONTENUTO TABELLE
 
@@ -115,9 +115,9 @@ Software - sistemi - strumenti digitali
 Lingue straniere e livello richiesto
 
 # CHECKLIST FINALE
-✓ Intestazione CSV presente
+✓ Intestazione CSV presente con colonna Nome_Tabella
 ✓ Tutte e 8 tabelle presenti con dati
-✓ 8 colonne per ogni riga (inclusa colonna Tabella)
+✓ 8 colonne per ogni riga (inclusa colonna Nome_Tabella)
 ✓ Norme nel formato [Tipo N°/Anno – Titolo]
 ✓ Fallback "Nessun riferimento normativo specifico" dove necessario
 ✓ Separatore punto e virgola (;)
