@@ -706,13 +706,14 @@ Lingue straniere e livello richiesto
 
 # STRUTTURA COLONNE (identica per tutte le 8 tabelle)
 1. Nome_Tabella
-2. Area_Contrattuale
-3. Profilo
-4. Competenza_Conoscenza
-5. Descrizione_Operativa
-6. Riferimenti_Normativi
-7. Peso_1_10
-8. Livello_Richiesto_1_7
+2. Tipologia
+3. Area_Contrattuale
+4. Profilo
+5. Competenza_Conoscenza
+6. Descrizione_Operativa
+7. Riferimenti_Normativi
+8. Peso_1_10
+9. Livello_Richiesto_1_7
 
 # FORMATO OUTPUT CSV
 
@@ -720,17 +721,17 @@ Restituisci **ESCLUSIVAMENTE** il CSV seguente, senza testo introduttivo, conclu
 Inizia direttamente con l'intestazione e i dati.
 
 \`\`\`
-Nome_Tabella;Area_Contrattuale;Profilo;Competenza_Conoscenza;Descrizione_Operativa;Riferimenti_Normativi;Peso_1_10;Livello_Richiesto_1_7
-T1;[area];[profilo];[competenza];[descrizione];[norme];9;7
-T1;[area];[profilo];[competenza];[descrizione];[norme];8;6
-T2;[area];[profilo];[competenza];[descrizione];[norme];7;5
-T2;[area];[profilo];[competenza];[descrizione];[norme];8;6
-T3;[area];[profilo];[competenza];[descrizione];[norme];9;7
-T4;[area];[profilo];[competenza];[descrizione];[norme];8;6
-T5;[area];[profilo];[competenza];[descrizione];[norme];7;5
-T6;[area];[profilo];[competenza];[descrizione];[norme];6;4
-T7;[area];[profilo];[competenza];[descrizione];[norme];5;4
-T8;[area];[profilo];[competenza];[descrizione];[norme];4;3
+Nome_Tabella;Tipologia;Area_Contrattuale;Profilo;Competenza_Conoscenza;Descrizione_Operativa;Riferimenti_Normativi;Peso_1_10;Livello_Richiesto_1_7
+T1;Normativa generale enti locali;[area];[profilo];[competenza];[descrizione];[norme];9;7
+T1;Normativa generale enti locali;[area];[profilo];[competenza];[descrizione];[norme];8;6
+T2;Normativa nazionale e regionale;[area];[profilo];[competenza];[descrizione];[norme];7;5
+T2;Normativa nazionale e regionale;[area];[profilo];[competenza];[descrizione];[norme];8;6
+T3;Normativa specifica del profilo;[area];[profilo];[competenza];[descrizione];[norme];9;7
+T4;Competenze tecnico-specialistiche;[area];[profilo];[competenza];[descrizione];[norme];8;6
+T5;Competenze gestionali e procedurali;[area];[profilo];[competenza];[descrizione];[norme];7;5
+T6;Competenze trasversali;[area];[profilo];[competenza];[descrizione];[norme];6;4
+T7;Competenze informatiche;[area];[profilo];[competenza];[descrizione];[norme];5;4
+T8;Competenze linguistiche;[area];[profilo];[competenza];[descrizione];[norme];4;3
 \`\`\`
 
 # REGOLE DI FORMATTAZIONE CSV
@@ -740,7 +741,7 @@ T8;[area];[profilo];[competenza];[descrizione];[norme];4;3
 4. NON usare a capo all'interno dei campi
 5. Ogni riga è una competenza/conoscenza
 6. La prima riga DEVE essere l'intestazione
-7. Tutte le 8 tabelle vanno nello stesso CSV con la colonna Nome_Tabella
+7. Tutte le 8 tabelle vanno nello stesso CSV con le colonne Nome_Tabella e Tipologia
 
 # CONTENUTO TABELLE
 
@@ -770,9 +771,9 @@ Software - sistemi - strumenti digitali
 Lingue straniere e livello richiesto
 
 # CHECKLIST FINALE
-✓ Intestazione CSV presente con colonna Nome_Tabella
+✓ Intestazione CSV presente con colonne Nome_Tabella e Tipologia
 ✓ Tutte e 8 tabelle presenti con dati
-✓ 8 colonne per ogni riga (inclusa colonna Nome_Tabella)
+✓ 9 colonne per ogni riga (incluse colonne Nome_Tabella e Tipologia)
 ✓ Norme nel formato [Tipo N°/Anno – Titolo]
 ✓ Fallback "Nessun riferimento normativo specifico" dove necessario
 ✓ Separatore punto e virgola (;)
