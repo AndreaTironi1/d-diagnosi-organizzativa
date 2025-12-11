@@ -510,6 +510,9 @@ function createExcelFromResult(result, rowIndex) {
     }
   }
 
+  // Track if RISULTATI sheet was created
+  let risultatiCreated = false;
+
   // If we have PA competenze format, create only RISULTATI sheet
   if (parsedData && (parsedData.competenze_flat || parsedData.tabella_1_normativa_generale)) {
     // New optimized flat format - data already combined
@@ -518,6 +521,7 @@ function createExcelFromResult(result, rowIndex) {
       const tutteSheet = xlsx.utils.json_to_sheet(parsedData.competenze_flat);
       xlsx.utils.book_append_sheet(workbook, tutteSheet, 'RISULTATI');
       console.log('✅ RISULTATI sheet created successfully');
+      risultatiCreated = true;
     } else {
       // Old format with 8 separate tables - combine them
       const tables = {
@@ -543,71 +547,130 @@ function createExcelFromResult(result, rowIndex) {
         const tutteSheet = xlsx.utils.json_to_sheet(tutteLeRighe);
         xlsx.utils.book_append_sheet(workbook, tutteSheet, 'RISULTATI');
         console.log('✅ RISULTATI sheet created successfully');
+        risultatiCreated = true;
       }
     }
   }
 
 
-  if (!parsedData || (!parsedData.tabella_1_normativa_generale && !Array.isArray(parsedData) && typeof parsedData !== 'object')) {
-    // Fallback: check if parsedData is an array, if so explode it into rows
-    if (parsedData && Array.isArray(parsedData) && parsedData.length > 0) {
-      console.log(`Creating Data sheet with ${parsedData.length} rows from array`);
-      const sheet = xlsx.utils.json_to_sheet(parsedData);
-      xlsx.utils.book_append_sheet(workbook, sheet, 'Data');
-      console.log('✅ Array exploded into Excel rows successfully');
-    } else if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
-      console.log('parsedData is an object (not array), looking for arrays inside...');
-      // If parsedData is an object, try to find arrays within it and create sheets
-      let hasSheets = false;
-      for (const [key, value] of Object.entries(parsedData)) {
-        if (Array.isArray(value) && value.length > 0) {
-          const sheetName = key.substring(0, 31); // Excel sheet name limit
-          console.log(`Creating sheet '${sheetName}' with ${value.length} rows from object property '${key}'`);
-          const sheet = xlsx.utils.json_to_sheet(value);
-          xlsx.utils.book_append_sheet(workbook, sheet, sheetName);
-          hasSheets = true;
-          console.log(`✅ Array '${key}' exploded into Excel rows successfully`);
-        }
-      }
-
-      // If no arrays found, create a sheet with the object properties
-      if (!hasSheets) {
-        console.log('No arrays found in object, creating single row with object properties');
-        const sheet = xlsx.utils.json_to_sheet([parsedData]);
-        xlsx.utils.book_append_sheet(workbook, sheet, 'Data');
-      }
-    } else {
-      console.log('⚠️ Using fallback - no parseable JSON data found');
-      // Ultimate fallback: create a simple info sheet without raw JSON/text in cells
-      const fallbackData = [{
-        'Row #': rowIndex + 1,
-        ...result.rowData,
-        'Status': result.success ? 'Success - No structured data found' : 'Error',
-        'Note': result.success ? 'Response did not contain parseable JSON data' : (result.error || 'Request failed')
-      }];
-      if (result.usage) {
-        fallbackData[0]['Input Tokens'] = result.usage.inputTokens;
-        fallbackData[0]['Output Tokens'] = result.usage.outputTokens;
-      }
-      const sheet = xlsx.utils.json_to_sheet(fallbackData);
-      xlsx.utils.book_append_sheet(workbook, sheet, 'Info');
-
-      // If there's a response but it's not JSON, create a separate text sheet with chunks
-      if (result.success && result.response && !jsonFound) {
-        // Split long text into manageable chunks (Excel cell limit is 32767 chars)
-        const maxChunkSize = 30000;
-        const responseText = result.response;
-        const chunks = [];
-
-        for (let i = 0; i < responseText.length; i += maxChunkSize) {
-          chunks.push({
-            'Part': Math.floor(i / maxChunkSize) + 1,
-            'Content': responseText.substring(i, i + maxChunkSize)
-          });
+  // Only create fallback sheets if RISULTATI was not created
+  if (!risultatiCreated) {
+    if (!parsedData || (!parsedData.tabella_1_normativa_generale && !Array.isArray(parsedData) && typeof parsedData !== 'object')) {
+      // Fallback: check if parsedData is an array, if so explode it into rows
+      if (parsedData && Array.isArray(parsedData) && parsedData.length > 0) {
+        console.log(`Creating RISULTATO sheet with ${parsedData.length} rows from array`);
+        const sheet = xlsx.utils.json_to_sheet(parsedData);
+        xlsx.utils.book_append_sheet(workbook, sheet, 'RISULTATO');
+        console.log('✅ Array exploded into Excel rows successfully');
+      } else if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
+        console.log('parsedData is an object (not array), looking for arrays inside...');
+        // If parsedData is an object, try to find arrays within it and create RISULTATO sheet
+        let hasSheets = false;
+        for (const [key, value] of Object.entries(parsedData)) {
+          if (Array.isArray(value) && value.length > 0) {
+            console.log(`Creating RISULTATO sheet with ${value.length} rows from object property '${key}'`);
+            const sheet = xlsx.utils.json_to_sheet(value);
+            xlsx.utils.book_append_sheet(workbook, sheet, 'RISULTATO');
+            hasSheets = true;
+            console.log(`✅ Array '${key}' exploded into Excel rows successfully`);
+            break; // Only create one RISULTATO sheet from first array found
+          }
         }
 
-        const textSheet = xlsx.utils.json_to_sheet(chunks);
-        xlsx.utils.book_append_sheet(workbook, textSheet, 'Response Text');
+        // If no arrays found, try to parse response as CSV
+        if (!hasSheets && result.success && result.response) {
+          console.log('⚠️ No arrays in object, attempting to parse response as CSV');
+          const response = result.response.trim();
+
+          // Try to parse as CSV with semicolon separator
+          if (response.includes(';')) {
+            try {
+              const lines = response.split('\n').map(line => line.trim()).filter(line => line);
+              if (lines.length > 1) {
+                const headers = lines[0].split(';').map(h => h.trim());
+                const csvData = [];
+
+                for (let i = 1; i < lines.length; i++) {
+                  const values = lines[i].split(';').map(v => v.trim().replace(/^"|"$/g, ''));
+                  if (values.length === headers.length) {
+                    const obj = {};
+                    headers.forEach((header, index) => {
+                      obj[header] = values[index];
+                    });
+                    csvData.push(obj);
+                  }
+                }
+
+                if (csvData.length > 0) {
+                  console.log(`✅ Parsed CSV with ${csvData.length} rows, creating RISULTATO sheet`);
+                  const sheet = xlsx.utils.json_to_sheet(csvData);
+                  xlsx.utils.book_append_sheet(workbook, sheet, 'RISULTATO');
+                  hasSheets = true;
+                }
+              }
+            } catch (e) {
+              console.log('Failed to parse response as CSV:', e.message);
+            }
+          }
+        }
+
+        // If still no sheets, create a sheet with the object properties
+        if (!hasSheets) {
+          console.log('No data found, creating single row with object properties');
+          const sheet = xlsx.utils.json_to_sheet([parsedData]);
+          xlsx.utils.book_append_sheet(workbook, sheet, 'RISULTATO');
+        }
+      } else {
+        console.log('⚠️ Using ultimate fallback - attempting to parse raw response as CSV');
+
+        // Ultimate fallback: try to parse raw response as CSV
+        if (result.success && result.response) {
+          const response = result.response.trim();
+          let csvParsed = false;
+
+          if (response.includes(';')) {
+            try {
+              const lines = response.split('\n').map(line => line.trim()).filter(line => line);
+              if (lines.length > 1) {
+                const headers = lines[0].split(';').map(h => h.trim());
+                const csvData = [];
+
+                for (let i = 1; i < lines.length; i++) {
+                  const values = lines[i].split(';').map(v => v.trim().replace(/^"|"$/g, ''));
+                  if (values.length === headers.length) {
+                    const obj = {};
+                    headers.forEach((header, index) => {
+                      obj[header] = values[index];
+                    });
+                    csvData.push(obj);
+                  }
+                }
+
+                if (csvData.length > 0) {
+                  console.log(`✅ Parsed raw response CSV with ${csvData.length} rows, creating RISULTATO sheet`);
+                  const sheet = xlsx.utils.json_to_sheet(csvData);
+                  xlsx.utils.book_append_sheet(workbook, sheet, 'RISULTATO');
+                  csvParsed = true;
+                }
+              }
+            } catch (e) {
+              console.log('Failed to parse raw response as CSV:', e.message);
+            }
+          }
+
+          // If CSV parsing failed, create minimal info sheet
+          if (!csvParsed) {
+            console.log('⚠️ All parsing attempts failed, creating minimal info sheet');
+            const fallbackData = [{
+              'Row #': rowIndex + 1,
+              ...result.rowData,
+              'Status': 'No parseable data',
+              'Note': 'Response could not be converted to table format'
+            }];
+            const sheet = xlsx.utils.json_to_sheet(fallbackData);
+            xlsx.utils.book_append_sheet(workbook, sheet, 'RISULTATO');
+          }
+        }
       }
     }
   }
