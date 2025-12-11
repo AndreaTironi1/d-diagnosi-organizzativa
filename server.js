@@ -28,7 +28,7 @@ const CREDENTIALS = {
 // Configure multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() });
 
-app.use(express.json());
+app.use(express.json({ limit: '4mb' }));
 
 // JWT Authentication middleware
 function authenticateToken(req, res, next) {

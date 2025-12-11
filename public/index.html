@@ -581,6 +581,8 @@
     </div>
 
     <script>
+        const APP_VERSION = '1.001';
+
         let excelData = null;
         let excelColumns = [];
         let batchResults = null;
@@ -615,7 +617,7 @@
             const day = String(now.getDate()).padStart(2, '0');
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
-            const version = `${year}${month}${day}-${hours}${minutes}`;
+            const version = `v${APP_VERSION} - ${year}${month}${day}-${hours}${minutes}`;
             document.getElementById('versionBadge').textContent = version;
         }
         setBuildVersion();
