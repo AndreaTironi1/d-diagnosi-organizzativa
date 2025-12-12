@@ -716,6 +716,58 @@ app.post('/api/download-single-excel', authenticateToken, (req, res) => {
   }
 });
 
+// Helper function to create consolidated Excel from multiple Excel files
+function createConsolidatedExcel(excelBuffers) {
+  console.log('\n=== Starting Consolidated Excel Creation ===');
+  console.log(`Processing ${excelBuffers.length} Excel files`);
+
+  const consolidatedRows = [];
+
+  // Process each Excel buffer
+  excelBuffers.forEach((buffer, fileIndex) => {
+    try {
+      // Read the Excel file
+      const workbook = xlsx.read(buffer, { type: 'buffer' });
+
+      // Look for RISULTATI or RISULTATO sheet
+      let sheetName = null;
+      if (workbook.SheetNames.includes('RISULTATI')) {
+        sheetName = 'RISULTATI';
+      } else if (workbook.SheetNames.includes('RISULTATO')) {
+        sheetName = 'RISULTATO';
+      } else if (workbook.SheetNames.length > 0) {
+        // Fallback to first sheet
+        sheetName = workbook.SheetNames[0];
+      }
+
+      if (sheetName) {
+        const sheet = workbook.Sheets[sheetName];
+        const rows = xlsx.utils.sheet_to_json(sheet);
+
+        console.log(`File ${fileIndex + 1}: Found ${rows.length} rows in sheet "${sheetName}"`);
+
+        // Add all rows to consolidated array
+        consolidatedRows.push(...rows);
+      } else {
+        console.log(`File ${fileIndex + 1}: No sheets found, skipping`);
+      }
+    } catch (error) {
+      console.error(`Error processing file ${fileIndex + 1}:`, error.message);
+    }
+  });
+
+  console.log(`Total consolidated rows: ${consolidatedRows.length}`);
+
+  // Create new workbook with consolidated data
+  const consolidatedWorkbook = xlsx.utils.book_new();
+  const consolidatedSheet = xlsx.utils.json_to_sheet(consolidatedRows);
+  xlsx.utils.book_append_sheet(consolidatedWorkbook, consolidatedSheet, 'TUTTI_I_RISULTATI');
+
+  console.log('✅ Consolidated Excel created successfully');
+
+  return consolidatedWorkbook;
+}
+
 // API endpoint to download all results as ZIP
 app.post('/api/download-excel-zip', authenticateToken, async (req, res) => {
   try {
@@ -726,6 +778,7 @@ app.post('/api/download-excel-zip', authenticateToken, async (req, res) => {
     }
 
     const zip = new JSZip();
+    const excelBuffers = [];
 
     // Create an Excel file for each result
     results.forEach((result, index) => {
@@ -733,7 +786,19 @@ app.post('/api/download-excel-zip', authenticateToken, async (req, res) => {
       const excelBuffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
       const filename = generateFilename(result, index);
       zip.file(filename, excelBuffer);
+
+      // Store buffer for consolidation
+      excelBuffers.push(excelBuffer);
     });
+
+    // Create consolidated Excel file
+    const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '_');
+    const consolidatedWorkbook = createConsolidatedExcel(excelBuffers);
+    const consolidatedBuffer = xlsx.write(consolidatedWorkbook, { type: 'buffer', bookType: 'xlsx' });
+    const consolidatedFilename = `CONSOLIDATO_RISULTATI_${timestamp}.xlsx`;
+    zip.file(consolidatedFilename, consolidatedBuffer);
+
+    console.log(`📦 Added consolidated file: ${consolidatedFilename}`);
 
     // Generate ZIP file
     const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
