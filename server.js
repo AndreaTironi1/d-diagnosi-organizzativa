@@ -813,6 +813,42 @@ app.post('/api/download-excel-zip', authenticateToken, async (req, res) => {
   }
 });
 
+// API endpoint to download consolidated Excel only
+app.post('/api/download-consolidated-excel', authenticateToken, async (req, res) => {
+  try {
+    const { results } = req.body;
+
+    if (!results || !Array.isArray(results)) {
+      return res.status(400).json({ error: 'Results data is required' });
+    }
+
+    const excelBuffers = [];
+
+    // Create an Excel file for each result
+    results.forEach((result, index) => {
+      const workbook = createExcelFromResult(result, index);
+      const excelBuffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+      excelBuffers.push(excelBuffer);
+    });
+
+    // Create consolidated Excel file
+    const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '_');
+    const consolidatedWorkbook = createConsolidatedExcel(excelBuffers);
+    const consolidatedBuffer = xlsx.write(consolidatedWorkbook, { type: 'buffer', bookType: 'xlsx' });
+    const consolidatedFilename = `CONSOLIDATO_RISULTATI_${timestamp}.xlsx`;
+
+    console.log(`📊 Generated consolidated file: ${consolidatedFilename}`);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=${consolidatedFilename}`);
+    res.send(consolidatedBuffer);
+
+  } catch (error) {
+    console.error('Error generating consolidated Excel:', error);
+    res.status(500).json({ error: 'Failed to generate consolidated Excel file' });
+  }
+});
+
 // API endpoint to download results as Excel
 app.post('/api/download-excel', authenticateToken, (req, res) => {
   try {

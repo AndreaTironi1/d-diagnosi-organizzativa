@@ -237,16 +237,21 @@
         }
 
         .summary-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
             gap: 15px;
             margin-top: 15px;
+            flex-wrap: wrap;
         }
 
         .stat-box {
             background: rgba(255, 255, 255, 0.2);
             padding: 12px;
             border-radius: 6px;
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
         }
 
         .stat-label {
@@ -572,7 +577,10 @@
                             <div class="stat-value" id="totalTime">0s</div>
                         </div>
                     </div>
-                    <button class="download-btn" onclick="downloadExcelZip()" style="background: #2196f3;">📦 Scarica Tutto ZIP</button>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                        <button class="download-btn" onclick="downloadConsolidatedExcel()" style="background: #4caf50;">📊 Scarica Excel Consolidato</button>
+                        <button class="download-btn" onclick="downloadExcelZip()" style="background: #2196f3;">📦 Scarica Tutto ZIP</button>
+                    </div>
                 </div>
 
                 <div id="resultsItems"></div>
@@ -1099,6 +1107,37 @@ Lingue straniere e livello richiesto
             } catch (error) {
                 console.error('Error downloading ZIP:', error);
                 alert('Errore nel download del file ZIP: ' + error.message);
+            }
+        }
+
+        async function downloadConsolidatedExcel() {
+            if (!batchResults) return;
+
+            try {
+                const response = await fetch('/api/download-consolidated-excel', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ results: batchResults })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate consolidated Excel');
+                }
+
+                // Get the blob from response
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+
+                // Create download link
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `CONSOLIDATO_RISULTATI_${Date.now()}.xlsx`;
+                link.click();
+
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Error downloading consolidated Excel:', error);
+                alert('Errore nel download del file Excel consolidato: ' + error.message);
             }
         }
 
