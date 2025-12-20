@@ -107,19 +107,39 @@ app.get('/api/account-balance', authenticateToken, async (req, res) => {
       });
     }
 
-    // Get account balance using Anthropic SDK
-    // Note: This is a placeholder - Anthropic API doesn't expose balance endpoint directly
-    // We'll return usage info from recent request instead
+    // Make a request to Anthropic's usage API
+    const response = await fetch('https://api.anthropic.com/v1/organization/usage', {
+      method: 'GET',
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      }
+    });
+
+    if (!response.ok) {
+      // If API call fails, return a friendly message
+      return res.json({
+        success: false,
+        message: 'Impossibile recuperare informazioni utilizzo',
+        note: 'Monitora l\'utilizzo su https://console.anthropic.com'
+      });
+    }
+
+    const usageData = await response.json();
+
     res.json({
       success: true,
-      message: 'Balance information not available via API',
-      note: 'Monitor usage at https://console.anthropic.com'
+      usage: usageData,
+      message: 'Dati utilizzo recuperati con successo'
     });
 
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({
-      error: error.message || 'Failed to get balance'
+    console.error('Error fetching balance:', error);
+    res.json({
+      success: false,
+      message: 'Impossibile recuperare informazioni utilizzo',
+      note: 'Monitora l\'utilizzo su https://console.anthropic.com',
+      error: error.message
     });
   }
 });

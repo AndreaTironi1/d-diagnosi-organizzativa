@@ -374,10 +374,17 @@
             margin: 30px 0;
         }
 
-        .logout-btn {
+        .logout-container {
             position: absolute;
             top: 20px;
             right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+
+        .logout-btn {
             background: rgba(255, 255, 255, 0.2);
             color: white;
             border: 2px solid white;
@@ -391,6 +398,13 @@
 
         .logout-btn:hover {
             background: rgba(255, 255, 255, 0.3);
+        }
+
+        .username-display {
+            color: white;
+            font-size: 12px;
+            opacity: 0.9;
+            font-weight: 500;
         }
 
         .header {
@@ -448,7 +462,10 @@
 <body>
     <div class="container">
         <div class="header">
-            <button class="logout-btn" onclick="handleLogout()">Esci</button>
+            <div class="logout-container">
+                <button class="logout-btn" onclick="handleLogout()">Esci</button>
+                <div class="username-display" id="usernameDisplay"></div>
+            </div>
             <h1>Esecutore Prompt con Excel</h1>
             <p>Carica un file Excel ed esegui prompt per ogni riga usando Claude API</p>
             <div class="version-badge" id="versionBadge">Loading...</div>
@@ -602,6 +619,15 @@
                 window.location.href = '/login.html';
                 return false;
             }
+            // Decode JWT to get username
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                if (payload.username) {
+                    document.getElementById('usernameDisplay').textContent = payload.username;
+                }
+            } catch (e) {
+                console.error('Error decoding token:', e);
+            }
             return true;
         }
 
@@ -617,15 +643,9 @@
         // Check authentication on page load
         checkAuth();
 
-        // Set version badge with build timestamp
+        // Set version badge
         function setBuildVersion() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const version = `v${APP_VERSION} - ${year}${month}${day}-${hours}${minutes}`;
+            const version = `v${APP_VERSION}`;
             document.getElementById('versionBadge').textContent = version;
         }
         setBuildVersion();
@@ -860,6 +880,52 @@ Lingue straniere e livello richiesto
             }
         }
 
+        // Function to get and display account balance
+        async function getAccountBalance(label) {
+            try {
+                const response = await fetch('/api/account-balance', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.usage) {
+                    console.log(`\n========== ${label} ==========`);
+                    console.log('Dati utilizzo Anthropic:', data.usage);
+                    console.log('=====================================\n');
+                    return data.usage;
+                } else {
+                    console.log(`\n========== ${label} ==========`);
+                    console.log(data.message || 'Impossibile recuperare informazioni utilizzo');
+                    console.log('Monitora utilizzo su: https://console.anthropic.com');
+                    console.log('=====================================\n');
+                    return null;
+                }
+            } catch (error) {
+                console.error(`Errore nel recupero dati utilizzo (${label}):`, error);
+                return null;
+            }
+        }
+
+        // Function to format usage data for display
+        function formatUsageData(usage) {
+            if (!usage) return 'Non disponibile';
+
+            // Try to extract meaningful info from usage object
+            if (usage.credits_remaining !== undefined) {
+                return `$${(usage.credits_remaining / 100).toFixed(2)} USD`;
+            } else if (usage.balance !== undefined) {
+                return `$${(usage.balance / 100).toFixed(2)} USD`;
+            } else if (usage.total_cost !== undefined) {
+                return `Costo totale: $${usage.total_cost.toFixed(4)} USD`;
+            } else {
+                return 'Dati disponibili in console';
+            }
+        }
+
         async function executeBatch() {
             const prompt = document.getElementById('prompt').value.trim();
             const model = document.getElementById('modelSelect').value;
@@ -874,9 +940,18 @@ Lingue straniere e livello richiesto
                 return;
             }
 
+            // Get account balance BEFORE execution
+            console.log('📊 Recupero informazioni utilizzo PRIMA dell\'esecuzione...');
+            const usageBefore = await getAccountBalance('CREDITO PRIMA ELABORAZIONE');
+            const creditoBefore = formatUsageData(usageBefore);
+
             // Show account info
             document.getElementById('accountInfo').classList.add('active');
-            document.getElementById('accountUsageInfo').innerHTML = '⏳ Inizio elaborazione... Monitora l\'utilizzo su <a href="https://console.anthropic.com" target="_blank" style="color: #2196f3;">console.anthropic.com</a>';
+            document.getElementById('accountUsageInfo').innerHTML = `
+                ⏳ Inizio elaborazione...<br>
+                💳 <strong>Credito iniziale:</strong> ${creditoBefore}<br>
+                🔗 Monitora l\'utilizzo su <a href="https://console.anthropic.com" target="_blank" style="color: #2196f3;">console.anthropic.com</a>
+            `;
 
             // Show loading and progress
             document.getElementById('loading').classList.add('active');
@@ -968,11 +1043,17 @@ Lingue straniere e livello richiesto
                 const finalTime = Math.floor((Date.now() - startTime) / 1000);
                 document.getElementById('totalTime').textContent = `${finalTime}s`;
 
+                // Get account balance AFTER execution
+                console.log('📊 Recupero informazioni utilizzo DOPO l\'esecuzione...');
+                const usageAfter = await getAccountBalance('CREDITO DOPO ELABORAZIONE');
+                const creditoAfter = formatUsageData(usageAfter);
+
                 // Update account usage info with final stats
                 const totalTokens = totalUsage.inputTokens + totalUsage.outputTokens;
                 const estimatedCost = (totalTokens / 1000000 * 3).toFixed(4); // Rough estimate at $3 per million tokens
                 document.getElementById('accountUsageInfo').innerHTML = `
                     ✅ <strong>Elaborazione completata!</strong><br>
+                    💳 <strong>Credito prima:</strong> ${creditoBefore} → <strong>Credito dopo:</strong> ${creditoAfter}<br>
                     📊 Token totali utilizzati: <strong>${totalTokens.toLocaleString()}</strong> (Input: ${totalUsage.inputTokens.toLocaleString()} + Output: ${totalUsage.outputTokens.toLocaleString()})<br>
                     💵 Costo stimato: ~$${estimatedCost} USD<br>
                     🔗 Verifica il saldo su <a href="https://console.anthropic.com" target="_blank" style="color: #2196f3;">console.anthropic.com</a>
