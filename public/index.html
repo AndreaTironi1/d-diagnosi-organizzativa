@@ -409,6 +409,18 @@
             font-weight: 600;
         }
 
+        .username-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
         .progress-container {
             display: none;
             background: #f8f9fa;
@@ -448,6 +460,7 @@
 <body>
     <div class="container">
         <div class="header">
+            <div class="username-badge" id="usernameBadge">Loading...</div>
             <button class="logout-btn" onclick="handleLogout()">Esci</button>
             <h1>Esecutore Prompt con Excel</h1>
             <p>Carica un file Excel ed esegui prompt per ogni riga usando Claude API</p>
@@ -589,7 +602,7 @@
     </div>
 
     <script>
-        const APP_VERSION = '1.035';
+        const APP_VERSION = '1.040';
 
         let excelData = null;
         let excelColumns = [];
@@ -617,15 +630,39 @@
         // Check authentication on page load
         checkAuth();
 
-        // Set version badge with build timestamp
+        // Decode JWT token to get username
+        function getUsername() {
+            const token = localStorage.getItem('authToken');
+            if (!token) return null;
+
+            try {
+                // JWT payload is the second part (base64 encoded)
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+
+                const payload = JSON.parse(jsonPayload);
+                return payload.username || 'User';
+            } catch (error) {
+                console.error('Error decoding token:', error);
+                return 'User';
+            }
+        }
+
+        // Set username badge
+        function setUsernameBadge() {
+            const username = getUsername();
+            if (username) {
+                document.getElementById('usernameBadge').textContent = username;
+            }
+        }
+        setUsernameBadge();
+
+        // Set version badge
         function setBuildVersion() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const version = `v${APP_VERSION} - ${year}${month}${day}-${hours}${minutes}`;
+            const version = `v${APP_VERSION}`;
             document.getElementById('versionBadge').textContent = version;
         }
         setBuildVersion();
