@@ -589,7 +589,7 @@
     </div>
 
     <script>
-        const APP_VERSION = '1.035';
+        const APP_VERSION = '1.050';
 
         let excelData = null;
         let excelColumns = [];
@@ -617,15 +617,9 @@
         // Check authentication on page load
         checkAuth();
 
-        // Set version badge with build timestamp
+        // Set version badge
         function setBuildVersion() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const version = `v${APP_VERSION} - ${year}${month}${day}-${hours}${minutes}`;
+            const version = `v${APP_VERSION}`;
             document.getElementById('versionBadge').textContent = version;
         }
         setBuildVersion();
