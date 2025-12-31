@@ -409,6 +409,18 @@
             font-weight: 600;
         }
 
+        .username-badge {
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
         .progress-container {
             display: none;
             background: #f8f9fa;
@@ -448,6 +460,7 @@
 <body>
     <div class="container">
         <div class="header">
+            <div class="username-badge" id="usernameBadge">Loading...</div>
             <button class="logout-btn" onclick="handleLogout()">Esci</button>
             <h1>Esecutore Prompt con Excel</h1>
             <p>Carica un file Excel ed esegui prompt per ogni riga usando Claude API</p>
@@ -589,7 +602,7 @@
     </div>
 
     <script>
-        const APP_VERSION = '1.051';
+        const APP_VERSION = '1.061';
 
         let excelData = null;
         let excelColumns = [];
@@ -616,6 +629,22 @@
 
         // Check authentication on page load
         checkAuth();
+
+        // Set username badge from JWT token
+        function setUsernameBadge() {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                try {
+                    // Decode JWT (simple base64 decode of payload)
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    const username = payload.username || 'User';
+                    document.getElementById('usernameBadge').textContent = username;
+                } catch (error) {
+                    document.getElementById('usernameBadge').textContent = 'User';
+                }
+            }
+        }
+        setUsernameBadge();
 
         // Set version badge
         function setBuildVersion() {

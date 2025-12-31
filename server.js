@@ -186,12 +186,16 @@ app.post('/api/execute', authenticateToken, async (req, res) => {
       ]
     });
 
+    // Remove Anthropic monitoring message from response
+    let responseText = message.content[0].text;
+    responseText = responseText.replace(/Per monitorare il credito residuo.*?console\.anthropic\.com[^\n]*/gi, '').trim();
+
     res.json({
       success: true,
       rowIndex: rowIndex !== undefined ? rowIndex : 0,
       rowData: variables || {},
       processedPrompt,
-      response: message.content[0].text,
+      response: responseText,
       usage: {
         inputTokens: message.usage.input_tokens,
         outputTokens: message.usage.output_tokens
@@ -330,11 +334,15 @@ app.post('/api/execute-batch', authenticateToken, async (req, res) => {
           ]
         });
 
+        // Remove Anthropic monitoring message from response
+        let responseText = message.content[0].text;
+        responseText = responseText.replace(/Per monitorare il credito residuo.*?console\.anthropic\.com[^\n]*/gi, '').trim();
+
         results.push({
           rowIndex: i,
           rowData: row,
           processedPrompt,
-          response: message.content[0].text,
+          response: responseText,
           usage: {
             inputTokens: message.usage.input_tokens,
             outputTokens: message.usage.output_tokens
