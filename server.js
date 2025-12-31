@@ -188,7 +188,14 @@ app.post('/api/execute', authenticateToken, async (req, res) => {
 
     // Remove Anthropic monitoring message from response
     let responseText = message.content[0].text;
-    responseText = responseText.replace(/Per monitorare il credito residuo.*?console\.anthropic\.com[^\n]*/gi, '').trim();
+    // Remove various forms of the monitoring message
+    responseText = responseText
+      .replace(/Per monitorare.*?console\.anthropic\.com/gi, '')
+      .replace(/To monitor.*?console\.anthropic\.com/gi, '')
+      .replace(/visita:\s*console\.anthropic\.com/gi, '')
+      .replace(/visit:\s*console\.anthropic\.com/gi, '')
+      .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up multiple newlines
+      .trim();
 
     res.json({
       success: true,
@@ -336,7 +343,14 @@ app.post('/api/execute-batch', authenticateToken, async (req, res) => {
 
         // Remove Anthropic monitoring message from response
         let responseText = message.content[0].text;
-        responseText = responseText.replace(/Per monitorare il credito residuo.*?console\.anthropic\.com[^\n]*/gi, '').trim();
+        // Remove various forms of the monitoring message
+        responseText = responseText
+          .replace(/Per monitorare.*?console\.anthropic\.com/gi, '')
+          .replace(/To monitor.*?console\.anthropic\.com/gi, '')
+          .replace(/visita:\s*console\.anthropic\.com/gi, '')
+          .replace(/visit:\s*console\.anthropic\.com/gi, '')
+          .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up multiple newlines
+          .trim();
 
         results.push({
           rowIndex: i,
