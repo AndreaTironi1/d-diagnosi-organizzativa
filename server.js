@@ -73,6 +73,35 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+// Clean cell value before using it
+function cleanValue(value) {
+  if (value == null) return '';
+
+  let cleaned = String(value);
+
+  // 1. Rimuovi spazi a inizio e fine
+  cleaned = cleaned.trim();
+
+  // 2. Rimuovi tabulazioni
+  cleaned = cleaned.replace(/\t/g, ' ');
+
+  // 3. Sostituisci caratteri tipografici con equivalenti standard
+  cleaned = cleaned
+    // Virgolette tipografiche → standard
+    .replace(/[""]/g, '"')
+    .replace(/['']/g, "'")
+    // Trattini lunghi → trattino normale
+    .replace(/[—–]/g, '-')
+    // Puntini di sospensione → tre punti
+    .replace(/…/g, '...')
+    // Spazi non-breaking → spazio normale
+    .replace(/\u00A0/g, ' ')
+    // Apici tipografici
+    .replace(/[`´]/g, "'");
+
+  return cleaned;
+}
+
 // Replace variables in prompt template using square bracket syntax [column_name]
 function replaceVariables(template, variables) {
   let result = template;
@@ -81,7 +110,7 @@ function replaceVariables(template, variables) {
     const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`\\[${escapedKey}\\]`, 'g');
     // Convert value to string and handle null/undefined
-    const stringValue = value != null ? String(value) : '';
+    const stringValue = cleanValue(value);
     result = result.replace(regex, stringValue);
   }
   return result;
@@ -692,8 +721,23 @@ function generateFilename(result, rowIndex) {
   const settore = rowData.SETTORE || rowData.Settore || rowData.settore || '';
 
   let filename = 'Analisi';
-  if (profilo) filename += `_${profilo.replace(/[^a-zA-Z0-9]/g, '_')}`;
-  if (settore) filename += `_${settore.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+  if (profilo) {
+    let cleanProfilo = profilo.replace(/[^a-zA-Z0-9]/g, '_');
+    if (cleanProfilo.length > 30) {
+      cleanProfilo = cleanProfilo.substring(0, 30);
+    }
+    filename += `_${cleanProfilo}`;
+  }
+
+  if (settore) {
+    let cleanSettore = settore.replace(/[^a-zA-Z0-9]/g, '_');
+    if (cleanSettore.length > 30) {
+      cleanSettore = cleanSettore.substring(0, 30);
+    }
+    filename += `_${cleanSettore}`;
+  }
+
   filename += `_row${rowIndex + 1}`;
 
   return filename + '.xlsx';

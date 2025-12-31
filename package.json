@@ -1,6 +1,6 @@
 {
   "name": "prompt-executor-web",
-  "version": "1.050",
+  "version": "1.051",
   "description": "Web app that executes prompts with variables using Claude API",
   "main": "server.js",
   "type": "module",
