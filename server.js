@@ -19,10 +19,10 @@ const PORT = process.env.PORT || 3000;
 // JWT secret key
 const JWT_SECRET = process.env.JWT_SECRET || 'prompt-executor-jwt-secret-key-2025';
 
-// Hardcoded credentials
+// Credentials from environment variables (set in Vercel dashboard)
 const CREDENTIALS = {
-  username: 'dasein',
-  password: 'Donatella2025!@'
+  username: process.env.AUTH_USERNAME || 'admin',
+  password: process.env.AUTH_PASSWORD || 'changeme'
 };
 
 // Configure multer for file uploads

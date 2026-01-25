@@ -114,6 +114,22 @@
             font-size: 48px;
             margin-bottom: 10px;
         }
+
+        .login-header {
+            position: relative;
+        }
+
+        .version-badge {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -122,6 +138,7 @@
             <div class="lock-icon">🔐</div>
             <h1>Login</h1>
             <p>Prompt Executor with Excel</p>
+            <div class="version-badge" id="versionBadge">Loading...</div>
         </div>
 
         <div class="login-content">
@@ -146,6 +163,11 @@
     </div>
 
     <script>
+        const APP_VERSION = '1.063';
+
+        // Set version badge
+        document.getElementById('versionBadge').textContent = `v${APP_VERSION}`;
+
         async function handleLogin(event) {
             event.preventDefault();
 
